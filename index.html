@@ -721,13 +721,15 @@
   .pilenav button:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 
   /* two looping decks inside the player */
-  .lbdecks { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 4vw, 56px); align-items: start; padding-top: 8px; }
+  .lbdecks { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 4vw, 56px); align-items: start; padding-top: clamp(36px, 7vh, 72px); }
   .lbdeck { min-width: 0; text-align: center; }
   .lbdeck h3 { margin: 0 0 14px; font: 600 12px/1.3 var(--label); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); text-align: left; }
   .lbdeck .pile { width: 100%; max-width: 440px; margin: 0 auto; }
   .lbdeck .pile.vert { max-width: 220px; }
   .lbdeck .pilestack { margin-bottom: 30px; }
   @media (max-width: 560px) { .lbdecks { gap: 10px; } .lbdeck .pcard .pttl { font-size: 9px; left: 10px; right: 10px; bottom: 9px; } .lbdeck .pcard .pplay { width: 38px; height: 38px; margin: -19px 0 0 -19px; } .lbdeck .pcard .pplay::before { left: 14px; top: 11px; border-left-width: 10px; border-top-width: 7px; border-bottom-width: 7px; } }
+
+  .pilestack, .lbdeck .pilestack { touch-action: pan-y; } .pcard { cursor: grab; } .pcard:active { cursor: grabbing; }
 </style>
 
 </head>
@@ -1058,7 +1060,6 @@
         '<span class="count" data-n="' + s.items.length + '">' + String(s.items.length).padStart(2, '0') + ' ' + t('films') + '</span></div></div>' +
         '<div class="grid' + (s.vertical ? ' vertical' : '') + '" id="grid-' + s.id + '">' + cards + '</div>' +
         '<div class="morewrap"><button type="button" class="more" data-for="grid-' + s.id + '" hidden>See more</button></div>' +
-        '<div class="pilewrap" id="pile-' + s.id + '"></div>' +
         feedbackBlock(s.feedback) +
       '</div>';
     host.appendChild(sec);
@@ -1069,101 +1070,13 @@
     var cards = g.querySelectorAll('.card');
     var cols = getComputedStyle(g).gridTemplateColumns.split(' ').length;
     var keep = cols * Math.ceil(3 / cols);
+    var open = g.dataset.open === '1';
     var btn = document.querySelector('.more[data-for="' + g.id + '"]');
-    for (var i = 0; i < cards.length; i++) cards[i].hidden = i >= keep;
-    if (btn) btn.hidden = true;
-    buildPile(g.id.replace(/^grid-/, ''), keep, g.classList.contains('vertical'));
-  }
-  /* The videos that do not fit in the first row become a pile of cards: flick the top one away (or press the arrows), press it to watch. */
-  function buildPile(secId, keep, vertical) {
-    var wrap = document.getElementById('pile-' + secId), sec = null;
-    if (!wrap) return;
-    SECTIONS.forEach(function (x) { if (x.id === secId) sec = x; });
-    if (!sec || sec.items.length <= keep) { wrap.innerHTML = ''; wrap.dataset.keep = ''; return; }
-    if (wrap.dataset.keep === String(keep)) return;
-    wrap.dataset.keep = String(keep);
-    var rest = sec.items.slice(keep), n = rest.length;
-    wrap.innerHTML = '<div class="pile' + (vertical ? ' vert' : '') + '">' +
-      '<div class="pilehead"><span class="pilelabel" data-i18n="more">' + esc(t('more')) + '</span><span class="pilecount"></span></div>' +
-      '<div class="pilestack">' + rest.map(function (v) {
-        var name = v.t || sec.title, ar = v.ar || (sec.vertical ? 0.5625 : 1.7778);
-        return '<div class="pcard" role="button" tabindex="0" data-id="' + v.id + '" data-title="' + esc(name) + '" data-ar="' + ar + '" style="--z:' + (v.z || 1.3) + '">' +
-          '<span class="ppic">' + thumb(v.id, '') + '</span><i class="pplay"></i><span class="pttl">' + esc(name) + '</span></div>';
-      }).join('') + '</div>' +
-      '<div class="pilenav"><button type="button" class="pprev" aria-label="Previous">&larr;</button><button type="button" class="pnext" aria-label="Next">&rarr;</button></div></div>';
-    var stack = wrap.querySelector('.pilestack'), cs = Array.prototype.slice.call(stack.children), count = wrap.querySelector('.pilecount');
-    var order = cs.map(function (_, i) { return i; });
-    function place(c, pos, instant) {
-      if (instant) c.style.transition = 'none';
-      var k = Math.min(pos, 4), side = pos % 2 ? 1 : -1;
-      c.style.transform = 'translate3d(' + (side * k * 7) + 'px,' + (k * 11) + 'px,0) rotate(' + (pos ? side * Math.min(pos, 4) * 2.4 : 0) + 'deg) scale(' + (1 - k * 0.035) + ')';
-      c.style.opacity = pos > 4 ? 0 : 1;
-      c.style.zIndex = n - pos;
-      c.style.pointerEvents = pos === 0 ? 'auto' : 'none';
-      if (instant) { void c.offsetWidth; c.style.transition = ''; }
+    for (var i = 0; i < cards.length; i++) cards[i].hidden = !open && i >= keep;
+    if (btn) {
+      btn.hidden = cards.length <= keep;
+      btn.textContent = open ? t('less') : t('more') + ' (' + (cards.length - keep) + ')';
     }
-    function render() {
-      order.forEach(function (ci, pos) { place(cs[ci], pos, false); });
-      count.textContent = (cs.indexOf(cs[order[0]]) + 1) + ' / ' + n;
-    }
-    function next(dir) {
-      if (n < 2) return;
-      var top = cs[order[0]], back = cs[order[n - 1]];
-      var d = dir || 1;
-      top.style.transform = 'translate3d(' + (d * 120) + '%,-6%,0) rotate(' + (d * 18) + 'deg)';
-      top.style.opacity = 0;
-      order.push(order.shift());
-      order.forEach(function (ci, pos) { if (ci !== cs.indexOf(top)) place(cs[ci], pos, false); });
-      count.textContent = (order[0] + 1) + ' / ' + n;
-      setTimeout(function () { place(top, n - 1, true); }, 340);
-    }
-    function prev() {
-      if (n < 2) return;
-      order.unshift(order.pop());
-      var c = cs[order[0]];
-      place(c, 0, true);
-      c.style.transform = 'translate3d(-120%,-6%,0) rotate(-18deg)'; c.style.opacity = 0;
-      void c.offsetWidth;
-      render();
-    }
-    wrap.querySelector('.pnext').addEventListener('click', function () { next(1); });
-    wrap.querySelector('.pprev').addEventListener('click', prev);
-    var drag = null;
-    stack.addEventListener('pointerdown', function (e) {
-      var c = e.target.closest('.pcard');
-      if (!c || c !== cs[order[0]]) return;
-      drag = { c: c, x: e.clientX, dx: 0, moved: false, id: e.pointerId };
-    });
-    window.addEventListener('pointermove', function (e) {
-      if (!drag || e.pointerId !== drag.id) return;
-      drag.dx = e.clientX - drag.x;
-      if (Math.abs(drag.dx) > 6) drag.moved = true;
-      if (drag.moved) { drag.c.style.transition = 'none'; drag.c.style.transform = 'translate3d(' + drag.dx + 'px,0,0) rotate(' + (drag.dx * 0.06) + 'deg)'; }
-    });
-    function end(e) {
-      if (!drag || (e && e.pointerId !== drag.id)) return;
-      var d = drag; drag = null;
-      d.c.style.transition = '';
-      if (d.moved) {
-        d.c.dataset.dragged = '1'; setTimeout(function () { delete d.c.dataset.dragged; }, 50);
-        if (Math.abs(d.dx) > 70) next(d.dx > 0 ? 1 : -1); else render();
-      }
-    }
-    window.addEventListener('pointerup', end);
-    window.addEventListener('pointercancel', end);
-    stack.addEventListener('click', function (e) {
-      var c = e.target.closest('.pcard');
-      if (!c || c.dataset.dragged) return;
-      openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c);
-    });
-    stack.addEventListener('keydown', function (e) {
-      var c = e.target.closest('.pcard');
-      if (!c) return;
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c); }
-      if (e.key === 'ArrowRight') next(1);
-      if (e.key === 'ArrowLeft') prev();
-    });
-    render();
   }
   function layoutAll() { document.querySelectorAll('.grid').forEach(layoutGrid); }
   layoutAll();
@@ -1436,66 +1349,65 @@
   var moreTimers = [];
   function stopMoreTimers() { moreTimers.forEach(clearInterval); moreTimers = []; }
   /* two decks side by side in the player: same category, and one video from each other category. They shuffle on their own in a loop. */
-  function initStack(stack, auto) {
-    var cs = Array.prototype.slice.call(stack.children), n = cs.length;
-    var order = cs.map(function (_, i) { return i; }), paused = false;
-    function place(c, pos, instant) {
-      if (instant) c.style.transition = 'none';
-      var k = Math.min(pos, 4), side = pos % 2 ? 1 : -1;
-      c.style.transform = 'translate3d(' + (side * k * 7) + 'px,' + (k * 11) + 'px,0) rotate(' + (pos ? side * k * 2.4 : 0) + 'deg) scale(' + (1 - k * 0.035) + ')';
-      c.style.opacity = pos > 4 ? 0 : 1;
-      c.style.zIndex = n - pos;
-      c.style.pointerEvents = pos === 0 ? 'auto' : 'none';
-      if (instant) { void c.offsetWidth; c.style.transition = ''; }
+  function initStack(stack, auto, onFront) {
+    var cs = Array.prototype.slice.call(stack.children), n = cs.length, idx = 0, drag = null, busy = false;
+    function rank(ci) { return (ci - idx + n) % n; }
+    function place(c, r, instant) {
+      var k = Math.min(r, 4), side = r % 2 ? 1 : -1;
+      c.style.transition = instant ? 'none' : '';
+      c.style.transform = 'translate3d(' + (side * k * 7) + 'px,' + (k * 11) + 'px,0) rotate(' + (side * k * 2.4) + 'deg) scale(' + (1 - k * 0.035) + ')';
+      c.style.opacity = r > 4 ? '0' : '1';
+      c.style.zIndex = String(n - r);
+      c.style.pointerEvents = r === 0 ? 'auto' : 'none';
     }
-    function render() { order.forEach(function (ci, pos) { place(cs[ci], pos, false); }); }
-    function next(dir) {
-      if (n < 2) return;
-      var d = dir || 1, topI = order[0], top = cs[topI];
-      top.style.transform = 'translate3d(' + (d * 120) + '%,-6%,0) rotate(' + (d * 18) + 'deg)';
-      top.style.opacity = 0;
-      order.push(order.shift());
-      order.forEach(function (ci, pos) { if (ci !== topI) place(cs[ci], pos, false); });
-      setTimeout(function () { place(top, n - 1, true); }, 340);
+    function layout(instant) { cs.forEach(function (c, ci) { place(c, rank(ci), instant); }); if (onFront) onFront(idx); }
+    function fly(dx, dy, dir) {
+      if (busy || n < 2) return; busy = true;
+      var c = cs[idx], w = stack.clientWidth || 300, sx = dx || dir * w * 1.3, sy = dy || 0, len = Math.hypot(sx, sy) || 1;
+      var fx = sx / len * w * 1.5, fy = sy / len * w * 1.5;
+      c.style.transition = 'transform .38s cubic-bezier(.2,.7,.3,1), opacity .38s';
+      c.style.transform = 'translate3d(' + fx + 'px,' + fy + 'px,0) rotate(' + (fx / w * 30) + 'deg)';
+      c.style.opacity = '0';
+      idx = (idx + 1) % n;
+      cs.forEach(function (o, ci) { if (o !== c) place(o, rank(ci)); });
+      if (onFront) onFront(idx);
+      setTimeout(function () { place(c, n - 1, true); void c.offsetWidth; c.style.transition = ''; c.style.opacity = n - 1 > 4 ? '0' : '1'; busy = false; }, 400);
     }
-    var drag = null;
     stack.addEventListener('pointerdown', function (e) {
-      var c = e.target.closest('.pcard');
-      if (!c || c !== cs[order[0]]) return;
-      drag = { c: c, x: e.clientX, dx: 0, moved: false, id: e.pointerId };
+      if (busy || n < 2 || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      var c = e.target.closest('.pcard'); if (!c || c !== cs[idx]) return;
+      drag = { x: e.clientX, y: e.clientY, id: e.pointerId, moved: false, dx: 0, dy: 0, t: Date.now(), c: c };
       try { stack.setPointerCapture(e.pointerId); } catch (err) {}
     });
     stack.addEventListener('pointermove', function (e) {
       if (!drag || e.pointerId !== drag.id) return;
-      drag.dx = e.clientX - drag.x;
-      if (Math.abs(drag.dx) > 6) drag.moved = true;
-      if (drag.moved) { drag.c.style.transition = 'none'; drag.c.style.transform = 'translate3d(' + drag.dx + 'px,0,0) rotate(' + (drag.dx * 0.06) + 'deg)'; }
+      drag.dx = e.clientX - drag.x; drag.dy = e.clientY - drag.y;
+      if (!drag.moved && Math.hypot(drag.dx, drag.dy) > 6) { drag.moved = true; drag.c.style.transition = 'none'; }
+      if (drag.moved) drag.c.style.transform = 'translate3d(' + drag.dx + 'px,' + drag.dy + 'px,0) rotate(' + (drag.dx / (stack.clientWidth || 300) * 22) + 'deg)';
     });
     function end(e) {
       if (!drag || e.pointerId !== drag.id) return;
       var d = drag; drag = null;
-      d.c.style.transition = '';
-      if (d.moved) {
-        d.c.dataset.dragged = '1'; setTimeout(function () { delete d.c.dataset.dragged; }, 50);
-        if (Math.abs(d.dx) > 70) next(d.dx > 0 ? 1 : -1); else render();
-      }
+      if (!d.moved) return;
+      stack.dataset.dragged = '1'; setTimeout(function () { delete stack.dataset.dragged; }, 80);
+      var w = stack.clientWidth || 300, dist = Math.hypot(d.dx, d.dy), v = dist / Math.max(1, Date.now() - d.t);
+      if (dist > w * 0.28 || v > 0.6) fly(d.dx, d.dy, d.dx < 0 ? -1 : 1);
+      else { d.c.style.transition = 'transform .35s cubic-bezier(.2,.8,.2,1)'; place(d.c, 0); }
     }
     stack.addEventListener('pointerup', end);
     stack.addEventListener('pointercancel', end);
     stack.addEventListener('click', function (e) {
       var c = e.target.closest('.pcard');
-      if (!c || c.dataset.dragged) return;
+      if (!c || stack.dataset.dragged || c !== cs[idx]) return;
       openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c);
     });
     stack.addEventListener('keydown', function (e) {
       var c = e.target.closest('.pcard');
       if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c); }
-      if (e.key === 'ArrowRight') next(1);
+      if (e.key === 'ArrowRight') fly(0, 0, 1);
     });
-    ['pointerenter', 'focusin'].forEach(function (ev) { stack.addEventListener(ev, function () { paused = true; }); });
-    ['pointerleave', 'focusout'].forEach(function (ev) { stack.addEventListener(ev, function () { paused = false; }); });
-    render();
-    if (auto && n > 1) moreTimers.push(setInterval(function () { if (!paused && !drag && !lb.hidden && !document.hidden) next(1); }, 2600));
+    layout(true);
+    return { step: function (d) { fly(0, 0, d || 1); } };
   }
   function renderMore(id) {
     var box = document.getElementById('lbmore'), sec = null;
@@ -1520,7 +1432,7 @@
     box.innerHTML = '<div class="lbdecks">' + (same ? deck('lb.same', same, sec.vertical) : '') + deck('lb.other', others, false) + '</div>';
     box.hidden = false;
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    box.querySelectorAll('.pilestack').forEach(function (st) { initStack(st, !reduce); });
+    box.querySelectorAll('.pilestack').forEach(function (st) { initStack(st, false); });
   }
   document.getElementById('lbmore').addEventListener('click', function (e) {
     var m = e.target.closest('.mini');
