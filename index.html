@@ -792,6 +792,11 @@
     .drawer .dsub a { padding: 13px 0 13px 14px; font: 800 15px/1.1 var(--label); letter-spacing: .02em; color: #0b0907; }
     .drawer .dsub a:hover, .drawer .dsub a:focus-visible { color: #0b0907; }
   }
+
+  .mark:hover .nav4 .lp, .mark:focus-visible .nav4 .lp { background-color: var(--accent); }
+
+  .mark .marklogo { display: block; height: 46px; background-color: #FCECCF; -webkit-mask: var(--lg) center / contain no-repeat; mask: var(--lg) center / contain no-repeat; transition: background-color .2s; }
+  .mark:hover .marklogo, .mark:focus-visible .marklogo { background-color: #F0A81E; }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
@@ -2132,6 +2137,20 @@ window.ROLL_PHOTOS = ["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA
   window.addEventListener('resize', q);
   update();
   setTimeout(update, 600);
+})();
+/* menu logo: same picture, drawn as a mask so it can turn yellow on hover */
+(function () {
+  var img = document.querySelector('.mark img');
+  if (!img) return;
+  function swap() {
+    if (!img.naturalWidth) return;
+    var sp = document.createElement('span');
+    sp.className = 'marklogo'; sp.setAttribute('role', 'img'); sp.setAttribute('aria-label', img.alt || 'Danz Film');
+    sp.style.setProperty('--lg', 'url("' + img.src + '")');
+    sp.style.aspectRatio = img.naturalWidth + ' / ' + img.naturalHeight;
+    img.parentNode.replaceChild(sp, img);
+  }
+  if (img.complete) swap(); else img.addEventListener('load', swap);
 })();
 /* inline onload/onerror handlers in the thumbnails need these two to be reachable */
 window.thumbOk = thumbOk; window.thumbFail = thumbFail;
