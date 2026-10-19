@@ -735,6 +735,12 @@
   html::before { content: ''; position: fixed; inset: 0; background: #F0A81E; z-index: 2147483000; pointer-events: none; animation: yelwipe .7s cubic-bezier(.77,0,.18,1) .12s forwards; }
   @keyframes yelwipe { from { transform: translateY(0); } to { transform: translateY(-101%); visibility: hidden; } }
   @media (prefers-reduced-motion: reduce) { html::before { display: none; } }
+
+  .lb { overflow-x: hidden !important; }
+  .lb > * { max-width: 100%; }
+
+  #lbclose { background: #F0A81E !important; color: #0b0907 !important; border-color: #F0A81E !important; font-weight: 600; }
+  #lbclose:hover, #lbclose:focus-visible { background: #ffc24a !important; border-color: #ffc24a !important; }
 </style>
 
 </head>
@@ -1501,6 +1507,40 @@
     if (p) openImage(p.dataset.src, p.dataset.title, p);
   });
   document.getElementById('lbclose').addEventListener('click', closePlayer);
+  /* Drag the player up or down (mouse or finger) to close it. */
+  (function () {
+    var g = null;
+    function skip(el) { return el.closest('.pilestack, button, a, iframe, video, input, .lbdecks .pcard'); }
+    function setY(y) { lb.style.transition = 'none'; lb.style.transform = 'translateY(' + y + 'px)'; lb.style.opacity = String(Math.max(0.25, 1 - Math.abs(y) / 520)); }
+    function reset() { lb.style.transition = 'transform .3s cubic-bezier(.2,.8,.2,1), opacity .3s'; lb.style.transform = ''; lb.style.opacity = ''; setTimeout(function () { lb.style.transition = ''; }, 320); }
+    function start(x, y, el, touch) { if (lb.hidden || skip(el)) return; g = { x: x, y: y, dy: 0, on: false, touch: touch, top: lb.scrollTop <= 0, bot: lb.scrollTop + lb.clientHeight >= lb.scrollHeight - 2 }; }
+    function move(x, y, e) {
+      if (!g) return;
+      var dx = x - g.x, dy = y - g.y;
+      if (!g.on) {
+        if (Math.abs(dy) < 10 || Math.abs(dy) < Math.abs(dx) * 1.2) return;
+        if (g.touch && !((dy > 0 && g.top) || (dy < 0 && g.bot))) { g = null; return; }
+        g.on = true;
+      }
+      g.dy = dy; setY(dy);
+      if (e.cancelable) e.preventDefault();
+    }
+    function end() {
+      if (!g) return; var d = g; g = null;
+      if (!d.on) return;
+      if (Math.abs(d.dy) > 110) {
+        lb.style.transition = 'transform .22s ease-in, opacity .22s'; lb.style.transform = 'translateY(' + (d.dy > 0 ? 100 : -100) + '%)'; lb.style.opacity = '0';
+        setTimeout(function () { closePlayer(); lb.style.transition = 'none'; lb.style.transform = ''; lb.style.opacity = ''; setTimeout(function () { lb.style.transition = ''; }, 30); }, 230);
+      } else reset();
+    }
+    lb.addEventListener('mousedown', function (e) { if (e.button === 0) start(e.clientX, e.clientY, e.target, false); });
+    window.addEventListener('mousemove', function (e) { move(e.clientX, e.clientY, e); });
+    window.addEventListener('mouseup', end);
+    lb.addEventListener('touchstart', function (e) { var t0 = e.touches[0]; start(t0.clientX, t0.clientY, e.target, true); }, { passive: true });
+    lb.addEventListener('touchmove', function (e) { var t0 = e.touches[0]; move(t0.clientX, t0.clientY, e); }, { passive: false });
+    lb.addEventListener('touchend', end);
+    lb.addEventListener('touchcancel', end);
+  })();
   lb.addEventListener('click', function (e) { if (e.target === lb) closePlayer(); });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lb.hidden) closePlayer(); });
 
