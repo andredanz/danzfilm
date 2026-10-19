@@ -775,6 +775,23 @@
   /* Danz logo, bottom left of the player */
   .lblogo { position: fixed; z-index: 3; left: max(clamp(16px, 3vw, 56px), env(safe-area-inset-left, 0px)); bottom: 26px; width: clamp(84px, 8vw, 118px); aspect-ratio: 900 / 368; background-color: #F0A81E; -webkit-mask: var(--lg) center / contain no-repeat; mask: var(--lg) center / contain no-repeat; pointer-events: none; }
   .lb[hidden] .lblogo { display: none; }
+
+  /* mobile menu = the same yellow panel as the desktop Work menu */
+  @media (max-width: 1099px) {
+    .drawer { top: calc(env(safe-area-inset-top, 0px) + 78px); left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: auto; max-height: calc(100dvh - env(safe-area-inset-top, 0px) - 96px); background: #F0A81E; border-radius: 22px; padding: 8px 22px 16px; box-shadow: 0 0 0 100vmax rgba(5,4,3,.62), 0 24px 60px rgba(0,0,0,.55); animation: ddin .3s cubic-bezier(.2,.8,.2,1); }
+    @keyframes ddin { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
+    .drawer ul { margin: 0; padding: 0; }
+    .drawer > ul > li > a { display: block; padding: 15px 0; border-bottom: 0; font: 800 17px/1.1 var(--label); letter-spacing: .02em; color: #0b0907; }
+    .drawer > ul > li:not(:last-child) { border-bottom: 1px solid rgba(11,9,7,.28); }
+    .drawer .dwbtn { padding: 15px 0; border-bottom: 0; font: 800 17px/1.1 var(--label); letter-spacing: .02em; color: #0b0907; }
+    .drawer .dwbtn:hover, .drawer .dwbtn.open { color: #0b0907; }
+    .drawer .dwbtn i { width: 7px; height: 7px; margin: 0 4px 3px 0; border-right-width: 2px; border-bottom-width: 2px; }
+    .drawer .dsub { padding: 0 0 8px; border-bottom: 0; }
+    .drawer .dsub li { border-bottom: 1px solid rgba(11,9,7,.28); }
+    .drawer .dsub li:last-child { border-bottom: 0; }
+    .drawer .dsub a { padding: 13px 0 13px 14px; font: 800 15px/1.1 var(--label); letter-spacing: .02em; color: #0b0907; }
+    .drawer .dsub a:hover, .drawer .dsub a:focus-visible { color: #0b0907; }
+  }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
@@ -1311,6 +1328,7 @@
         '<li><a href="#infos" data-i18n="s.infos">' + esc(t('s.infos')) + '</a></li>';
       var dsub = drawerList.querySelector('.dsub'), btn = drawerList.querySelector('.dwbtn');
       Array.prototype.forEach.call(subs, function (a) { var li = document.createElement('li'); li.appendChild(a.cloneNode(true)); dsub.appendChild(li); });
+      dsub.hidden = false; btn.setAttribute('aria-expanded', 'true'); btn.classList.add('open');
       btn.addEventListener('click', function () {
         var open = dsub.hidden;
         dsub.hidden = !open;
@@ -1554,14 +1572,16 @@
       shown += (p - shown) * 0.22;
       if (Math.abs(p - shown) < 0.004) shown = p;
       lb.style.transition = 'none';
-      lb.style.opacity = shown > 0 ? String(1 - shown * 0.95) : '';
-      lb.style.transform = shown > 0 ? 'translateY(' + (shown * 70) + 'px) scale(' + (1 - shown * 0.03) + ')' : '';
+      lb.style.opacity = '';
+      lb.style.transform = shown > 0 ? 'scale(' + (1 - shown * 0.42) + ')' : '';
+      lb.style.borderRadius = shown > 0 ? (shown * 34) + 'px' : '';
+      lb.style.boxShadow = shown > 0 ? '0 30px 90px rgba(0,0,0,' + (shown * 0.6) + ')' : '';
       lb.style.pointerEvents = shown > 0.55 ? 'none' : '';
       if (shown !== p) raf = setTimeout(paint, 16); else { raf = 0; if (p >= 1) finish(); }
     }
     function go() { if (!raf) raf = setTimeout(paint, 16); }
-    function reset() { p = 0; shown = 0; lb.style.opacity = ''; lb.style.transform = ''; lb.style.pointerEvents = ''; lb.style.transition = ''; }
-    function finish() { closePlayer(); reset(); }
+    function reset() { p = 0; shown = 0; lb.style.opacity = ''; lb.style.transform = ''; lb.style.borderRadius = ''; lb.style.boxShadow = ''; lb.style.pointerEvents = ''; lb.style.transition = ''; }
+    function finish() { lb.style.transition = 'transform .22s ease-in, opacity .22s ease-in'; lb.style.transform = 'scale(.3)'; lb.style.opacity = '0'; setTimeout(function () { closePlayer(); reset(); }, 230); }
     function settle() { p = 0; go(); }
     lb.addEventListener('wheel', function (e) {
       if (lb.hidden) return;
