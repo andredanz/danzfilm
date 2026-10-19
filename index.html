@@ -1,6 +1,7 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
+<meta name="google" content="notranslate">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Danz Film</title>
@@ -697,6 +698,27 @@
   .mcat .mca { position: absolute; right: 12px; bottom: 12px; width: 32px; height: 32px; display: grid; place-items: center; border-radius: 50%; background: var(--accent); color: #0b0907; font-size: 16px; transition: transform .3s cubic-bezier(.2,.8,.2,1); }
   .mcat:hover .mca { transform: translateX(4px) scale(1.08); }
   .lb-box { grid-template-columns: minmax(0, 1fr); } .lbmore { min-width: 0; }
+
+  /* card pile = "see more" */
+  .pilewrap { display: flex; justify-content: center; }
+  .pile { width: min(460px, 86vw); margin: 36px auto 8px; text-align: center; }
+  .pile.vert { width: min(250px, 66vw); }
+  .pilehead { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 18px; font: 600 12px/1 var(--label); letter-spacing: .12em; text-transform: uppercase; }
+  .pilelabel { color: var(--accent); }
+  .pilecount { color: rgba(252,236,207,.6); }
+  .pilestack { position: relative; width: 100%; aspect-ratio: 16 / 10; touch-action: pan-y; user-select: none; -webkit-user-select: none; }
+  .pile.vert .pilestack { aspect-ratio: 9 / 15; }
+  .pcard { position: absolute; inset: 0; border-radius: 14px; overflow: hidden; background: #15110d; border: 1px solid rgba(252,236,207,.14); box-shadow: 0 18px 44px rgba(0,0,0,.55); cursor: grab; transform-origin: 50% 90%; transition: transform .38s cubic-bezier(.2,.8,.2,1), opacity .3s; will-change: transform; -webkit-touch-callout: none; }
+  .pcard:active { cursor: grabbing; }
+  .pcard .ppic { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .pcard .ppic img { width: 100%; height: 100%; object-fit: cover; transform: scale(var(--z, 1.3)); display: block; -webkit-user-drag: none; }
+  .pcard::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(9,7,6,.85), rgba(9,7,6,0) 55%); pointer-events: none; }
+  .pcard .pttl { position: absolute; left: 16px; right: 16px; bottom: 14px; z-index: 1; text-align: left; font: 600 12px/1.35 var(--label); letter-spacing: .08em; text-transform: uppercase; color: var(--fg); }
+  .pcard .pplay { position: absolute; top: 50%; left: 50%; z-index: 1; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; background: rgba(9,7,6,.55); border: 1px solid rgba(252,236,207,.7); pointer-events: none; }
+  .pcard .pplay::before { content: ''; position: absolute; left: 21px; top: 16px; border-left: 14px solid var(--fg); border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
+  .pilenav { display: flex; justify-content: center; gap: 12px; margin-top: 30px; }
+  .pilenav button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--fg); font-size: 18px; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+  .pilenav button:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
 </style>
 
 </head>
@@ -785,7 +807,8 @@
   </div>
 </div>
 
-<script>
+<script>(function () {
+
   /* LANGUAGES: English is the default; French and Portuguese (Brazil) are switched with the flags at the top. */
   var D = {
     en: {
@@ -1026,6 +1049,7 @@
         '<span class="count" data-n="' + s.items.length + '">' + String(s.items.length).padStart(2, '0') + ' ' + t('films') + '</span></div></div>' +
         '<div class="grid' + (s.vertical ? ' vertical' : '') + '" id="grid-' + s.id + '">' + cards + '</div>' +
         '<div class="morewrap"><button type="button" class="more" data-for="grid-' + s.id + '" hidden>See more</button></div>' +
+        '<div class="pilewrap" id="pile-' + s.id + '"></div>' +
         feedbackBlock(s.feedback) +
       '</div>';
     host.appendChild(sec);
@@ -1036,13 +1060,101 @@
     var cards = g.querySelectorAll('.card');
     var cols = getComputedStyle(g).gridTemplateColumns.split(' ').length;
     var keep = cols * Math.ceil(3 / cols);
-    var open = g.dataset.open === '1';
     var btn = document.querySelector('.more[data-for="' + g.id + '"]');
-    for (var i = 0; i < cards.length; i++) cards[i].hidden = !open && i >= keep;
-    if (btn) {
-      btn.hidden = cards.length <= keep;
-      btn.textContent = open ? t('less') : t('more') + ' (' + (cards.length - keep) + ')';
+    for (var i = 0; i < cards.length; i++) cards[i].hidden = i >= keep;
+    if (btn) btn.hidden = true;
+    buildPile(g.id.replace(/^grid-/, ''), keep, g.classList.contains('vertical'));
+  }
+  /* The videos that do not fit in the first row become a pile of cards: flick the top one away (or press the arrows), press it to watch. */
+  function buildPile(secId, keep, vertical) {
+    var wrap = document.getElementById('pile-' + secId), sec = null;
+    if (!wrap) return;
+    SECTIONS.forEach(function (x) { if (x.id === secId) sec = x; });
+    if (!sec || sec.items.length <= keep) { wrap.innerHTML = ''; wrap.dataset.keep = ''; return; }
+    if (wrap.dataset.keep === String(keep)) return;
+    wrap.dataset.keep = String(keep);
+    var rest = sec.items.slice(keep), n = rest.length;
+    wrap.innerHTML = '<div class="pile' + (vertical ? ' vert' : '') + '">' +
+      '<div class="pilehead"><span class="pilelabel" data-i18n="more">' + esc(t('more')) + '</span><span class="pilecount"></span></div>' +
+      '<div class="pilestack">' + rest.map(function (v) {
+        var name = v.t || sec.title, ar = v.ar || (sec.vertical ? 0.5625 : 1.7778);
+        return '<div class="pcard" role="button" tabindex="0" data-id="' + v.id + '" data-title="' + esc(name) + '" data-ar="' + ar + '" style="--z:' + (v.z || 1.3) + '">' +
+          '<span class="ppic">' + thumb(v.id, '') + '</span><i class="pplay"></i><span class="pttl">' + esc(name) + '</span></div>';
+      }).join('') + '</div>' +
+      '<div class="pilenav"><button type="button" class="pprev" aria-label="Previous">&larr;</button><button type="button" class="pnext" aria-label="Next">&rarr;</button></div></div>';
+    var stack = wrap.querySelector('.pilestack'), cs = Array.prototype.slice.call(stack.children), count = wrap.querySelector('.pilecount');
+    var order = cs.map(function (_, i) { return i; });
+    function place(c, pos, instant) {
+      if (instant) c.style.transition = 'none';
+      var k = Math.min(pos, 4), side = pos % 2 ? 1 : -1;
+      c.style.transform = 'translate3d(' + (side * k * 7) + 'px,' + (k * 11) + 'px,0) rotate(' + (pos ? side * Math.min(pos, 4) * 2.4 : 0) + 'deg) scale(' + (1 - k * 0.035) + ')';
+      c.style.opacity = pos > 4 ? 0 : 1;
+      c.style.zIndex = n - pos;
+      c.style.pointerEvents = pos === 0 ? 'auto' : 'none';
+      if (instant) { void c.offsetWidth; c.style.transition = ''; }
     }
+    function render() {
+      order.forEach(function (ci, pos) { place(cs[ci], pos, false); });
+      count.textContent = (cs.indexOf(cs[order[0]]) + 1) + ' / ' + n;
+    }
+    function next(dir) {
+      if (n < 2) return;
+      var top = cs[order[0]], back = cs[order[n - 1]];
+      var d = dir || 1;
+      top.style.transform = 'translate3d(' + (d * 120) + '%,-6%,0) rotate(' + (d * 18) + 'deg)';
+      top.style.opacity = 0;
+      order.push(order.shift());
+      order.forEach(function (ci, pos) { if (ci !== cs.indexOf(top)) place(cs[ci], pos, false); });
+      count.textContent = (order[0] + 1) + ' / ' + n;
+      setTimeout(function () { place(top, n - 1, true); }, 340);
+    }
+    function prev() {
+      if (n < 2) return;
+      order.unshift(order.pop());
+      var c = cs[order[0]];
+      place(c, 0, true);
+      c.style.transform = 'translate3d(-120%,-6%,0) rotate(-18deg)'; c.style.opacity = 0;
+      void c.offsetWidth;
+      render();
+    }
+    wrap.querySelector('.pnext').addEventListener('click', function () { next(1); });
+    wrap.querySelector('.pprev').addEventListener('click', prev);
+    var drag = null;
+    stack.addEventListener('pointerdown', function (e) {
+      var c = e.target.closest('.pcard');
+      if (!c || c !== cs[order[0]]) return;
+      drag = { c: c, x: e.clientX, dx: 0, moved: false, id: e.pointerId };
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag.dx = e.clientX - drag.x;
+      if (Math.abs(drag.dx) > 6) drag.moved = true;
+      if (drag.moved) { drag.c.style.transition = 'none'; drag.c.style.transform = 'translate3d(' + drag.dx + 'px,0,0) rotate(' + (drag.dx * 0.06) + 'deg)'; }
+    });
+    function end(e) {
+      if (!drag || (e && e.pointerId !== drag.id)) return;
+      var d = drag; drag = null;
+      d.c.style.transition = '';
+      if (d.moved) {
+        d.c.dataset.dragged = '1'; setTimeout(function () { delete d.c.dataset.dragged; }, 50);
+        if (Math.abs(d.dx) > 70) next(d.dx > 0 ? 1 : -1); else render();
+      }
+    }
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
+    stack.addEventListener('click', function (e) {
+      var c = e.target.closest('.pcard');
+      if (!c || c.dataset.dragged) return;
+      openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c);
+    });
+    stack.addEventListener('keydown', function (e) {
+      var c = e.target.closest('.pcard');
+      if (!c) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c); }
+      if (e.key === 'ArrowRight') next(1);
+      if (e.key === 'ArrowLeft') prev();
+    });
+    render();
   }
   function layoutAll() { document.querySelectorAll('.grid').forEach(layoutGrid); }
   layoutAll();
@@ -1866,6 +1978,9 @@ window.ROLL_PHOTOS = ["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA
   window.addEventListener('resize', q);
   update();
   setTimeout(update, 600);
+})();
+/* inline onload/onerror handlers in the thumbnails need these two to be reachable */
+window.thumbOk = thumbOk; window.thumbFail = thumbFail;
 })();
 </script>
 </body>
