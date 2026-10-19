@@ -2116,7 +2116,7 @@ window.ROLL_PHOTOS = ["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA
     });
     var heroBottom = document.querySelector('.hero') ? document.querySelector('.hero').getBoundingClientRect().bottom : 0;
     var inHero = heroBottom > mid;
-    secs.forEach(function (el) { var v = vis.get(el) || 0; var sharp = el === best || v >= vh * 0.4 || (atBottom && v > 40); el.classList.toggle('dim', !inHero && !sharp); });
+    secs.forEach(function (el) { var v = vis.get(el) || 0; var h2 = el.querySelector('h2'), hb = h2 ? h2.getBoundingClientRect() : null; var titleIn = hb && hb.top >= 0 && hb.bottom <= vh * 0.7; var sharp = el === best || v >= vh * 0.3 || titleIn || (atBottom && v > 40); el.classList.toggle('dim', !inHero && !sharp); });
   }
   function q() { if (!queued) { queued = true; requestAnimationFrame(update); } }
   window.addEventListener('scroll', q, { passive: true });
