@@ -730,6 +730,11 @@
   @media (max-width: 560px) { .lbdecks { gap: 10px; } .lbdeck .pcard .pttl { font-size: 9px; left: 10px; right: 10px; bottom: 9px; } .lbdeck .pcard .pplay { width: 38px; height: 38px; margin: -19px 0 0 -19px; } .lbdeck .pcard .pplay::before { left: 14px; top: 11px; border-left-width: 10px; border-top-width: 7px; border-bottom-width: 7px; } }
 
   .pilestack, .lbdeck .pilestack { touch-action: pan-y; } .pcard { cursor: grab; } .pcard:active { cursor: grabbing; }
+
+  /* Quick yellow entrance wipe */
+  html::before { content: ''; position: fixed; inset: 0; background: #F0A81E; z-index: 2147483000; pointer-events: none; animation: yelwipe .7s cubic-bezier(.77,0,.18,1) .12s forwards; }
+  @keyframes yelwipe { from { transform: translateY(0); } to { transform: translateY(-101%); visibility: hidden; } }
+  @media (prefers-reduced-motion: reduce) { html::before { display: none; } }
 </style>
 
 </head>
