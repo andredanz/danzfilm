@@ -719,6 +719,15 @@
   .pilenav { display: flex; justify-content: center; gap: 12px; margin-top: 30px; }
   .pilenav button { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--fg); font-size: 18px; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
   .pilenav button:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+
+  /* two looping decks inside the player */
+  .lbdecks { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(16px, 4vw, 56px); align-items: start; padding-top: 8px; }
+  .lbdeck { min-width: 0; text-align: center; }
+  .lbdeck h3 { margin: 0 0 14px; font: 600 12px/1.3 var(--label); letter-spacing: .12em; text-transform: uppercase; color: var(--accent); text-align: left; }
+  .lbdeck .pile { width: 100%; max-width: 440px; margin: 0 auto; }
+  .lbdeck .pile.vert { max-width: 220px; }
+  .lbdeck .pilestack { margin-bottom: 30px; }
+  @media (max-width: 560px) { .lbdecks { gap: 10px; } .lbdeck .pcard .pttl { font-size: 9px; left: 10px; right: 10px; bottom: 9px; } .lbdeck .pcard .pplay { width: 38px; height: 38px; margin: -19px 0 0 -19px; } .lbdeck .pcard .pplay::before { left: 14px; top: 11px; border-left-width: 10px; border-top-width: 7px; border-bottom-width: 7px; } }
 </style>
 
 </head>
@@ -1424,22 +1433,94 @@
     view.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   });
   /* below the player: more videos from the same category, then the other categories */
+  var moreTimers = [];
+  function stopMoreTimers() { moreTimers.forEach(clearInterval); moreTimers = []; }
+  /* two decks side by side in the player: same category, and one video from each other category. They shuffle on their own in a loop. */
+  function initStack(stack, auto) {
+    var cs = Array.prototype.slice.call(stack.children), n = cs.length;
+    var order = cs.map(function (_, i) { return i; }), paused = false;
+    function place(c, pos, instant) {
+      if (instant) c.style.transition = 'none';
+      var k = Math.min(pos, 4), side = pos % 2 ? 1 : -1;
+      c.style.transform = 'translate3d(' + (side * k * 7) + 'px,' + (k * 11) + 'px,0) rotate(' + (pos ? side * k * 2.4 : 0) + 'deg) scale(' + (1 - k * 0.035) + ')';
+      c.style.opacity = pos > 4 ? 0 : 1;
+      c.style.zIndex = n - pos;
+      c.style.pointerEvents = pos === 0 ? 'auto' : 'none';
+      if (instant) { void c.offsetWidth; c.style.transition = ''; }
+    }
+    function render() { order.forEach(function (ci, pos) { place(cs[ci], pos, false); }); }
+    function next(dir) {
+      if (n < 2) return;
+      var d = dir || 1, topI = order[0], top = cs[topI];
+      top.style.transform = 'translate3d(' + (d * 120) + '%,-6%,0) rotate(' + (d * 18) + 'deg)';
+      top.style.opacity = 0;
+      order.push(order.shift());
+      order.forEach(function (ci, pos) { if (ci !== topI) place(cs[ci], pos, false); });
+      setTimeout(function () { place(top, n - 1, true); }, 340);
+    }
+    var drag = null;
+    stack.addEventListener('pointerdown', function (e) {
+      var c = e.target.closest('.pcard');
+      if (!c || c !== cs[order[0]]) return;
+      drag = { c: c, x: e.clientX, dx: 0, moved: false, id: e.pointerId };
+      try { stack.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+    stack.addEventListener('pointermove', function (e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      drag.dx = e.clientX - drag.x;
+      if (Math.abs(drag.dx) > 6) drag.moved = true;
+      if (drag.moved) { drag.c.style.transition = 'none'; drag.c.style.transform = 'translate3d(' + drag.dx + 'px,0,0) rotate(' + (drag.dx * 0.06) + 'deg)'; }
+    });
+    function end(e) {
+      if (!drag || e.pointerId !== drag.id) return;
+      var d = drag; drag = null;
+      d.c.style.transition = '';
+      if (d.moved) {
+        d.c.dataset.dragged = '1'; setTimeout(function () { delete d.c.dataset.dragged; }, 50);
+        if (Math.abs(d.dx) > 70) next(d.dx > 0 ? 1 : -1); else render();
+      }
+    }
+    stack.addEventListener('pointerup', end);
+    stack.addEventListener('pointercancel', end);
+    stack.addEventListener('click', function (e) {
+      var c = e.target.closest('.pcard');
+      if (!c || c.dataset.dragged) return;
+      openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c);
+    });
+    stack.addEventListener('keydown', function (e) {
+      var c = e.target.closest('.pcard');
+      if (c && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c); }
+      if (e.key === 'ArrowRight') next(1);
+    });
+    ['pointerenter', 'focusin'].forEach(function (ev) { stack.addEventListener(ev, function () { paused = true; }); });
+    ['pointerleave', 'focusout'].forEach(function (ev) { stack.addEventListener(ev, function () { paused = false; }); });
+    render();
+    if (auto && n > 1) moreTimers.push(setInterval(function () { if (!paused && !drag && !lb.hidden && !document.hidden) next(1); }, 2600));
+  }
   function renderMore(id) {
     var box = document.getElementById('lbmore'), sec = null;
+    stopMoreTimers();
     SECTIONS.forEach(function (s) { s.items.forEach(function (v) { if (v.id === id && !sec) sec = s; }); });
     if (!sec) { box.hidden = true; box.innerHTML = ''; return; }
-    function mini(s, v) {
-      var ar = v.ar || (s.vertical ? 0.5625 : 1.7778), name = v.t || s.title;
-      return '<button type="button" class="mini' + (s.vertical ? ' vert' : '') + '" data-id="' + v.id + '" data-title="' + esc(name) + '" data-ar="' + ar + '"' + (v.z ? ' style="--z:' + v.z + '"' : '') + '>' +
-        '<span class="mpic">' + thumb(v.id, '') + '<i class="mplay"></i></span><span class="mt">' + esc(name) + '</span></button>';
+    function card(v, title, nameKey, ar, z) {
+      return '<div class="pcard" role="button" tabindex="0" data-id="' + v.id + '" data-title="' + esc(title) + '" data-ar="' + ar + '" style="--z:' + (z || 1.3) + '">' +
+        '<span class="ppic">' + thumb(v.id, '') + '</span><i class="pplay"></i><span class="pttl"' + (nameKey ? ' data-i18n="' + nameKey + '"' : '') + '>' + esc(nameKey ? t(nameKey) : title) + '</span></div>';
     }
-    var same = sec.items.filter(function (v) { return v.id !== id; }).slice(0, 12).map(function (v) { return mini(sec, v); }).join('');
-    var others = SECTIONS.filter(function (s) { return s !== sec && s.items.length; }).map(function (s) {
-      return '<button type="button" class="mcat" data-sec="' + s.id + '"><span class="mpic">' + thumb(s.items[0].id, '') + '</span><span class="mcn" data-i18n="s.' + s.id + '">' + esc(t('s.' + s.id)) + '</span><span class="mca" aria-hidden="true">&rarr;</span></button>';
+    var same = sec.items.filter(function (v) { return v.id !== id; }).slice(0, 12).map(function (v) {
+      var name = v.t || sec.title;
+      return card(v, name, '', v.ar || (sec.vertical ? 0.5625 : 1.7778), v.z);
     }).join('');
-    box.innerHTML = (same ? '<h3 data-i18n="lb.same">' + esc(t('lb.same')) + '</h3><div class="mrow">' + same + '</div>' : '') +
-      '<h3 data-i18n="lb.other">' + esc(t('lb.other')) + '</h3><div class="mrow cats">' + others + '</div>';
+    var others = SECTIONS.filter(function (s) { return s !== sec && s.items.length; }).map(function (s) {
+      var v = s.items[0];
+      return card(v, v.t || s.title, 's.' + s.id, v.ar || (s.vertical ? 0.5625 : 1.7778), v.z);
+    }).join('');
+    function deck(h, cards, vert) {
+      return '<div class="lbdeck"><h3 data-i18n="' + h + '">' + esc(t(h)) + '</h3><div class="pile' + (vert ? ' vert' : '') + '"><div class="pilestack">' + cards + '</div></div></div>';
+    }
+    box.innerHTML = '<div class="lbdecks">' + (same ? deck('lb.same', same, sec.vertical) : '') + deck('lb.other', others, false) + '</div>';
     box.hidden = false;
+    var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    box.querySelectorAll('.pilestack').forEach(function (st) { initStack(st, !reduce); });
   }
   document.getElementById('lbmore').addEventListener('click', function (e) {
     var m = e.target.closest('.mini');
@@ -1472,6 +1553,7 @@
     lb.hidden = true;
     stage.innerHTML = '';
     document.getElementById('lbphotos').innerHTML = '';
+    stopMoreTimers();
     document.getElementById('lbmore').innerHTML = '';
     document.documentElement.style.overflow = '';
     if (lastFocus) lastFocus.focus();
