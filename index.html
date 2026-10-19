@@ -1845,16 +1845,21 @@ window.ROLL_PHOTOS = ["data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAA
   var queued = false;
   function update() {
     queued = false;
-    var mid = window.innerHeight * 0.5, best = null, bd = 1e9;
-    var r = secs.map(function (el) {
+    var vh = window.innerHeight, best = null, bd = 1e9;
+    var remain = document.documentElement.scrollHeight - (window.scrollY + vh);
+    var atBottom = remain <= 6;
+    var tEnd = Math.max(0, Math.min(1, 1 - remain / vh));
+    var mid = vh * (0.5 + 0.5 * tEnd);
+    var vis = new Map();
+    secs.forEach(function (el) {
       var b = el.getBoundingClientRect();
       var d = mid < b.top ? b.top - mid : (mid > b.bottom ? mid - b.bottom : 0);
       if (d < bd) { bd = d; best = el; }
-      return el;
+      vis.set(el, Math.max(0, Math.min(b.bottom, vh) - Math.max(b.top, 0)));
     });
     var heroBottom = document.querySelector('.hero') ? document.querySelector('.hero').getBoundingClientRect().bottom : 0;
     var inHero = heroBottom > mid;
-    secs.forEach(function (el) { el.classList.toggle('dim', !inHero && el !== best); });
+    secs.forEach(function (el) { var v = vis.get(el) || 0; var sharp = el === best || v >= vh * 0.4 || (atBottom && v > 40); el.classList.toggle('dim', !inHero && !sharp); });
   }
   function q() { if (!queued) { queued = true; requestAnimationFrame(update); } }
   window.addEventListener('scroll', q, { passive: true });
