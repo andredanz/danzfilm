@@ -1355,6 +1355,7 @@
 
   var savedY = 0;
   function showLightbox(title, href, linkText, trigger) {
+    if (window.__resetLbPull) window.__resetLbPull();
     if (lb.hidden) savedY = window.pageYOffset || document.documentElement.scrollTop || 0;
     lastFocus = trigger;
     featMute();
@@ -1542,24 +1543,47 @@
     if (p) openImage(p.dataset.src, p.dataset.title, p);
   });
   document.getElementById('lbclose').addEventListener('click', closePlayer);
-  /* Scroll up past the top of the player to close it and go back to where you were. */
+  /* Scroll up past the top of the player: the video screen fades into the background and the site shows through; keep going to close, scroll down to come back. */
   (function () {
-    var acc = 0, idleT = null, leftTop = 0;
+    var p = 0, shown = 0, raf = 0, idleT = null, leftTop = 0, TRAVEL = 420;
+    function paint() {
+      shown += (p - shown) * 0.22;
+      if (Math.abs(p - shown) < 0.004) shown = p;
+      lb.style.transition = 'none';
+      lb.style.opacity = shown > 0 ? String(1 - shown * 0.95) : '';
+      lb.style.transform = shown > 0 ? 'translateY(' + (shown * 70) + 'px) scale(' + (1 - shown * 0.03) + ')' : '';
+      lb.style.pointerEvents = shown > 0.55 ? 'none' : '';
+      if (shown !== p) raf = setTimeout(paint, 16); else { raf = 0; if (p >= 1) finish(); }
+    }
+    function go() { if (!raf) raf = setTimeout(paint, 16); }
+    function reset() { p = 0; shown = 0; lb.style.opacity = ''; lb.style.transform = ''; lb.style.pointerEvents = ''; lb.style.transition = ''; }
+    function finish() { closePlayer(); reset(); }
+    function settle() { p = 0; go(); }
     lb.addEventListener('wheel', function (e) {
       if (lb.hidden) return;
       var now = Date.now();
-      if (lb.scrollTop > 0 || e.deltaY >= 0) { acc = 0; if (lb.scrollTop > 0) leftTop = now; return; }
-      if (now - leftTop < 450) return;
-      acc += -e.deltaY;
-      clearTimeout(idleT); idleT = setTimeout(function () { acc = 0; }, 350);
-      if (acc > 100) { acc = 0; closePlayer(); }
+      if (lb.scrollTop > 0) { leftTop = now; if (p > 0) settle(); return; }
+      if (e.deltaY < 0) {
+        if (p === 0 && now - leftTop < 450) return;
+        p = Math.min(1, p + (-e.deltaY) / TRAVEL);
+      } else if (p > 0) {
+        p = Math.max(0, p + (-e.deltaY) / TRAVEL * 1.4);
+      } else return;
+      clearTimeout(idleT);
+      if (p > 0 && p < 1) idleT = setTimeout(settle, 900);
+      go();
     }, { passive: true });
-    var ty = null;
+    var ty = null, tp = 0;
     lb.addEventListener('touchstart', function (e) { ty = lb.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
     lb.addEventListener('touchmove', function (e) {
       if (ty === null || lb.hidden || lb.scrollTop > 0) return;
-      if (e.touches[0].clientY - ty > 140) { ty = null; closePlayer(); }
+      var d = e.touches[0].clientY - ty;
+      if (d > 0) { p = Math.min(1, d / 300); tp = p; go(); }
     }, { passive: true });
+    function tend() { if (ty === null) return; ty = null; if (p > 0.5) { p = 1; go(); } else settle(); }
+    lb.addEventListener('touchend', tend);
+    lb.addEventListener('touchcancel', tend);
+    window.__resetLbPull = reset; window.__pull = function () { return [p, shown, raf]; };
   })();
   /* Drag the player up or down (mouse or finger) to close it. */
   (function () {
