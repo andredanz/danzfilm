@@ -1565,49 +1565,58 @@
     if (p) openImage(p.dataset.src, p.dataset.title, p);
   });
   document.getElementById('lbclose').addEventListener('click', closePlayer);
-  /* Scroll up past the top of the player: the video screen fades into the background and the site shows through; keep going to close, scroll down to come back. */
+  /* Scroll up at the top of the player and it lifts away gradually like a curtain (same as the contact screen), revealing the site; scroll down to bring it back. */
   (function () {
-    var p = 0, shown = 0, raf = 0, idleT = null, leftTop = 0, TRAVEL = 420;
-    function paint() {
-      shown += (p - shown) * 0.22;
-      if (Math.abs(p - shown) < 0.004) shown = p;
+    var T = 420, p = 0, d = 0, goal = 0, mode = 'idle', idle = null, ty = null, raf = 0, leftTop = 0;
+    function draw() {
+      var k = Math.max(0, Math.min(1, d / T));
       lb.style.transition = 'none';
-      var sg = document.getElementById('stage'), rest = lb.querySelectorAll('.lb-bar, .lb-photos, .lbmore');
-      if (sg) { sg.style.transformOrigin = '50% 50%'; sg.style.transform = shown > 0 ? 'scale(' + (1 - shown * 0.5) + ')' : ''; sg.style.borderRadius = shown > 0 ? (6 + shown * 26) + 'px' : ''; sg.style.overflow = shown > 0 ? 'hidden' : ''; }
-      Array.prototype.forEach.call(rest, function (el) { el.style.opacity = shown > 0 ? String(Math.max(0, 1 - shown * 2.2)) : ''; });
-      lb.style.background = shown > 0 ? 'rgba(9,7,6,' + (0.985 * (1 - shown * 0.92)) + ')' : '';
-      lb.style.pointerEvents = shown > 0.55 ? 'none' : '';
-      if (shown !== p) raf = setTimeout(paint, 16); else { raf = 0; if (p >= 1) finish(); }
+      lb.style.transformOrigin = '50% 0';
+      lb.style.transform = k > 0 ? 'scale(' + (1 - 0.05 * k).toFixed(4) + ')' : '';
+      lb.style.clipPath = k > 0 ? 'inset(0 0 ' + (k * 100).toFixed(2) + '% 0 round 0 0 ' + Math.round(k * 40) + 'px ' + Math.round(k * 40) + 'px)' : '';
     }
-    function go() { if (!raf) raf = setTimeout(paint, 16); }
-    function reset() { p = 0; shown = 0; var sg = document.getElementById('stage'); if (sg) { sg.style.transform = ''; sg.style.transition = ''; sg.style.opacity = ''; sg.style.borderRadius = ''; sg.style.overflow = ''; } Array.prototype.forEach.call(lb.querySelectorAll('.lb-bar, .lb-photos, .lbmore'), function (el) { el.style.opacity = ''; }); lb.style.background = ''; lb.style.opacity = ''; lb.style.transform = ''; lb.style.pointerEvents = ''; lb.style.transition = ''; }
-    function finish() { var sg = document.getElementById('stage'); if (sg) { sg.style.transition = 'transform .22s ease-in, opacity .22s ease-in'; sg.style.transform = 'scale(.3)'; sg.style.opacity = '0'; } lb.style.transition = 'background .22s'; lb.style.background = 'rgba(9,7,6,0)'; setTimeout(function () { closePlayer(); reset(); }, 230); }
-    function settle() { p = 0; go(); }
+    function clear() { lb.style.transition = ''; lb.style.clipPath = ''; lb.style.transform = ''; lb.style.transformOrigin = ''; p = d = goal = 0; mode = 'idle'; }
+    function loop() {
+      raf = 0;
+      d += (goal - d) * (mode === 'pull' ? 0.14 : 0.075);
+      draw();
+      if (mode !== 'pull' && Math.abs(goal - d) < 0.8) {
+        if (goal >= T) { closePlayer(); }
+        clear();
+        return;
+      }
+      raf = setTimeout(loop, 16);
+    }
+    function kick() { if (!raf) raf = setTimeout(loop, 16); }
+    function release() { if (mode !== 'pull') return; mode = 'release'; goal = (p / T > 0.3) ? T : 0; kick(); }
+    function add(dv) {
+      if (mode === 'release') return;
+      mode = 'pull';
+      p = Math.max(0, Math.min(T, p + dv));
+      goal = p;
+      clearTimeout(idle);
+      idle = setTimeout(release, 260);
+      if (p >= T) { clearTimeout(idle); release(); }
+      kick();
+    }
     lb.addEventListener('wheel', function (e) {
-      if (lb.hidden) return;
+      if (lb.hidden || mode === 'release') return;
       var now = Date.now();
-      if (lb.scrollTop > 0) { leftTop = now; if (p > 0) settle(); return; }
-      if (e.deltaY < 0) {
-        if (p === 0 && now - leftTop < 450) return;
-        p = Math.min(1, p + (-e.deltaY) / TRAVEL);
-      } else if (p > 0) {
-        p = Math.max(0, p + (-e.deltaY) / TRAVEL * 1.4);
-      } else return;
-      clearTimeout(idleT);
-      if (p > 0 && p < 1) idleT = setTimeout(settle, 900);
-      go();
-    }, { passive: true });
-    var ty = null, tp = 0;
-    lb.addEventListener('touchstart', function (e) { ty = lb.scrollTop <= 0 ? e.touches[0].clientY : null; }, { passive: true });
+      if (lb.scrollTop > 0) { leftTop = now; return; }
+      if (e.deltaY < 0 && (p > 0 || now - leftTop > 450)) { e.preventDefault(); add(-e.deltaY * 0.5); }
+      else if (e.deltaY > 0 && p > 0) { e.preventDefault(); add(-e.deltaY * 0.5); }
+    }, { passive: false });
+    lb.addEventListener('touchstart', function (e) { ty = (lb.scrollTop <= 0 && mode !== 'release') ? e.touches[0].clientY : null; }, { passive: true });
     lb.addEventListener('touchmove', function (e) {
-      if (ty === null || lb.hidden || lb.scrollTop > 0) return;
-      var d = e.touches[0].clientY - ty;
-      if (d > 0) { p = Math.min(1, d / 300); tp = p; go(); }
-    }, { passive: true });
-    function tend() { if (ty === null) return; ty = null; if (p > 0.5) { p = 1; go(); } else settle(); }
-    lb.addEventListener('touchend', tend);
-    lb.addEventListener('touchcancel', tend);
-    window.__resetLbPull = reset; window.__pull = function () { return [p, shown, raf]; };
+      if (ty === null || mode === 'release') return;
+      var dv = (e.touches[0].clientY - ty) * 0.9;
+      if (dv > 0 && lb.scrollTop <= 0) { e.preventDefault(); mode = 'pull'; p = Math.min(T, dv); goal = p; clearTimeout(idle); kick(); }
+    }, { passive: false });
+    function tend() { if (ty !== null) { clearTimeout(idle); release(); } ty = null; }
+    lb.addEventListener('touchend', tend, { passive: true });
+    lb.addEventListener('touchcancel', tend, { passive: true });
+    window.__resetLbPull = function () { clearTimeout(idle); clearTimeout(raf); raf = 0; clear(); };
+    window.__pull = function () { return [p, d, mode === 'idle' ? 0 : 1]; };
   })();
   /* Drag the player up or down (mouse or finger) to close it. */
   (function () {
