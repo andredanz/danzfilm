@@ -2095,7 +2095,7 @@
     var c = e.target.closest && e.target.closest('.card');
     if (c === cur) return;
     stop();
-    if (!c || c.classList.contains('blur') || c.closest('.grid.vertical') || c.closest('.dim')) return;
+    if (!c || c.classList.contains('blur') || c.closest('.dim')) return;
     if (document.querySelector('#lb:not([hidden])')) return;
     timer = setTimeout(function () { begin(c); }, 80);
   });
@@ -2135,7 +2135,7 @@
   document.addEventListener('touchstart', function (e) {
     stop(); held = false;
     var c = e.target.closest && e.target.closest('.card');
-    if (!c || c.classList.contains('blur') || c.closest('.grid.vertical') || c.closest('.dim') || e.touches.length !== 1) return;
+    if (!c || c.classList.contains('blur') || c.closest('.dim') || e.touches.length !== 1) return;
     sx = e.touches[0].clientX; sy = e.touches[0].clientY;
     timer = setTimeout(function () {
       held = true; cur = c; c.classList.add('holding');
@@ -2314,7 +2314,7 @@ window.ROLL_PHOTOS = ["img/46c33fdc30.jpg", "img/b67daf8a41.jpg", "img/df544a6d0
   function frames() {
     var out = [], seen = {};
     document.querySelectorAll('.grid .card[data-id]').forEach(function (c) {
-      if (out.length >= 7 || c.classList.contains('blur') || c.closest('.grid.vertical') || c.closest('.dim')) return;
+      if (out.length >= 7 || c.classList.contains('blur') || c.closest('.dim')) return;
       var g = c.closest('.grid');
       if (g.dataset.fr && g.dataset.fr === '2') return;
       var img = c.querySelector('img'); if (!img || !img.complete || !img.naturalWidth || seen[c.dataset.id]) return;
