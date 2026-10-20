@@ -873,13 +873,13 @@
     .lb .lbnavrow .lbnav svg { width: 22px; height: 22px; stroke: #0b0907; }
   }
 
-  /* contact screen: opens and closes with the same yellow DANZ pattern as the site entrance */
-  .cov::before { content: ''; position: fixed; inset: 0; z-index: 5; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; opacity: 1; transition: opacity .2s ease .62s; }
-  .cov.in::before { opacity: 0; }
-  .cov.out::before { opacity: 1; transition: opacity .12s ease 0s; }
+  /* contact screen: opens and closes with the same yellow DANZ pattern as the site entrance; the letters dissolve slowly into the yellow */
+  .cov::before { content: ''; position: fixed; inset: 0; z-index: 5; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; opacity: 1; filter: blur(0); transform: scale(1); transition: opacity .65s cubic-bezier(.4, 0, .6, 1) .5s, filter .65s ease .5s, transform .8s ease .5s; }
+  .cov.in::before { opacity: 0; filter: blur(5px); transform: scale(1.06); }
+  .cov.out::before { opacity: 1; filter: blur(0); transform: scale(1); transition: opacity .3s ease 0s, filter .3s ease 0s, transform .3s ease 0s; }
   .cov > * { opacity: 0; transition: opacity .12s ease 0s; }
-  .cov.in > * { opacity: 1; transition: opacity .28s ease .62s; }
-  .cov.out { transition-delay: .1s; }
+  .cov.in > * { opacity: 1; transition: opacity .4s ease .85s; }
+  .cov.out { transition-delay: .25s; }
   @media (max-width: 560px) { .cov::before { background-size: 220px 220px; } }
 </style>
 
@@ -2253,7 +2253,7 @@
     cov.classList.add('out'); cov.classList.remove('in');
     document.documentElement.classList.remove('covopen');
     clearTimeout(tm);
-    tm = setTimeout(function () { cov.hidden = true; cov.classList.remove('out'); if (last && last.focus) last.focus({ preventScroll: true }); }, 800);
+    tm = setTimeout(function () { cov.hidden = true; cov.classList.remove('out'); if (last && last.focus) last.focus({ preventScroll: true }); }, 1150);
   }
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href="#infos"]');
