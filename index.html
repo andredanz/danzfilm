@@ -1577,6 +1577,7 @@
   var curId = '', curTrigger = null;
   function openPlayer(id, title, ar, trigger) {
     curId = id; curTrigger = trigger;
+    try { history.replaceState(null, '', '#v=' + id); } catch (x) {}
     lb.dataset.nav = '1';
     renderPhotos(id);
     renderMore(id);
@@ -1600,6 +1601,11 @@
     showLightbox(title, src, 'Open image', trigger);
   }
   function closePlayer() {
+    (function () {
+      var c = (curTrigger && curTrigger.closest && curTrigger.closest('.card')) || document.querySelector('.card[data-id="' + curId + '"]');
+      var sc = c && c.closest('section');
+      if (/^#v=/.test(location.hash)) setHash(sc ? sc.id : '');
+    })();
     lb.hidden = true;
     stage.innerHTML = '';
     document.getElementById('lbphotos').innerHTML = '';
@@ -1780,6 +1786,19 @@
     lb.addEventListener('touchcancel', end);
   })();
   lb.addEventListener('click', function (e) { if (e.target === lb) closePlayer(); });
+  /* A link like danzfilm.com/#v=VIDEOID opens that video straight away */
+  (function () {
+    var m = /^#v=([\w-]{6,20})$/.exec(location.hash);
+    if (!m) return;
+    function go() {
+      var card = document.querySelector('.card[data-id="' + m[1] + '"]');
+      if (!card) return;
+      var sec = card.closest('section');
+      if (sec) { var y = Math.max(0, Math.round(sec.getBoundingClientRect().top + window.pageYOffset - 80)); if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(y, { immediate: true, force: true }); window.scrollTo(0, y); }
+      openPlayer(card.dataset.id, card.dataset.title, parseFloat(card.dataset.ar), card);
+    }
+    if (document.readyState === 'complete') setTimeout(go, 900); else window.addEventListener('load', function () { setTimeout(go, 900); });
+  })();
   /* Previous / next video of the same category inside the player (buttons and arrow keys) */
   (function () {
     var ARW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
