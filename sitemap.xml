@@ -1,9 +1,30 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>https://danzfilm.com/</loc>
-    <lastmod>2026-10-20</lastmod>
-    <changefreq>monthly</changefreq>
+    <lastmod>2026-10-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://danzfilm.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://danzfilm.com/fr/"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://danzfilm.com/pt/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://danzfilm.com/"/>
     <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://danzfilm.com/fr/</loc>
+    <lastmod>2026-10-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://danzfilm.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://danzfilm.com/fr/"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://danzfilm.com/pt/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://danzfilm.com/"/>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://danzfilm.com/pt/</loc>
+    <lastmod>2026-10-21</lastmod>
+    <xhtml:link rel="alternate" hreflang="en" href="https://danzfilm.com/"/>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://danzfilm.com/fr/"/>
+    <xhtml:link rel="alternate" hreflang="pt" href="https://danzfilm.com/pt/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://danzfilm.com/"/>
+    <priority>0.8</priority>
   </url>
 </urlset>

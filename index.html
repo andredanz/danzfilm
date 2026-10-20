@@ -10,6 +10,11 @@
 
 <meta name="description" content="Danz Film - André Danz, filmmaker and videomaker based in Paris. Short films, reels, fashion, events, commercial and music videos.">
 <link rel="canonical" href="https://danzfilm.com/">
+<link rel="alternate" hreflang="en" href="https://danzfilm.com/">
+<link rel="alternate" hreflang="fr" href="https://danzfilm.com/fr/">
+<link rel="alternate" hreflang="pt" href="https://danzfilm.com/pt/">
+<link rel="alternate" hreflang="x-default" href="https://danzfilm.com/">
+
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Person", "name": "André Danz", "alternateName": "Danz Film", "url": "https://danzfilm.com/", "jobTitle": "Filmmaker", "description": "Brazilian filmmaker and videomaker based in Paris. Short films, reels, fashion, events, commercial and music videos.", "email": "mailto:danzfilm@gmail.com", "address": {"@type": "PostalAddress", "addressLocality": "Paris", "addressCountry": "FR"}, "sameAs": ["https://www.instagram.com/andredanz/"], "image": "https://danzfilm.com/og.png"}</script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://www.youtube-nocookie.com">
@@ -1052,6 +1057,7 @@
   };
   var lang = 'en';
   try { var saved = localStorage.getItem('lang'); if (saved === 'fr' || saved === 'pt' || saved === 'en') lang = saved; } catch (e) {}
+  if (window.__forceLang === 'fr' || window.__forceLang === 'pt' || window.__forceLang === 'en') lang = window.__forceLang;
   function t(k) { return (D[lang] && D[lang][k] != null) ? D[lang][k] : (D.en[k] != null ? D.en[k] : k); }
 
   /* HOW TO EDIT
