@@ -2111,7 +2111,7 @@
   var timer = null, cur = null, sx = 0, sy = 0, held = false;
   function stop() {
     clearTimeout(timer); timer = null;
-    if (cur) { var f = cur.querySelector('iframe.pv'); if (f) f.remove(); cur.classList.remove('holding'); cur = null; }
+    if (cur) { var f = cur.querySelector('iframe.pv'); if (f) f.remove(); var w = cur.querySelector('.pvwipe'); if (w) { w.style.transition = 'none'; cur.classList.remove('pvw', 'pvr'); void w.offsetWidth; w.style.transition = ''; } cur.classList.remove('holding'); cur = null; }
   }
   document.addEventListener('touchstart', function (e) {
     stop(); held = false;
@@ -2120,10 +2120,14 @@
     sx = e.touches[0].clientX; sy = e.touches[0].clientY;
     timer = setTimeout(function () {
       held = true; cur = c; c.classList.add('holding');
+      /* same yellow wipe as on the computer while the video loads */
+      if (!c.querySelector('.pvwipe')) { var w = document.createElement('i'); w.className = 'pvwipe'; w.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><g><rect x="6" y="19" width="36" height="22" rx="2"/><path d="M6 26h36M15 26l-4 7M26 26l-4 7M37 26l-4 7"/></g><g class="wa"><rect x="6" y="11" width="36" height="8" rx="2"/><path d="M14 11l-4 8M25 11l-4 8M36 11l-4 8"/></g></svg>'; c.appendChild(w); }
+      c.classList.remove('pvr'); c.classList.add('pvw');
+      setTimeout(function () { if (cur === c) c.classList.add('pvr'); }, 3500);
       var f = document.createElement('iframe');
       f.className = 'pv'; f.setAttribute('allow', 'autoplay'); f.setAttribute('tabindex', '-1');
-      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1';
-      f.onload = function () { setTimeout(function () { f.classList.add('on'); }, 350); };
+      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1&origin=' + encodeURIComponent(location.origin);
+      f.onload = function () { var m = JSON.stringify({ event: 'listening', id: 1 }); try { f.contentWindow.postMessage(m, '*'); } catch (x) {} setTimeout(function () { try { f.contentWindow.postMessage(m, '*'); } catch (x) {} }, 400); };
       c.insertBefore(f, c.querySelector('.play'));
       if (navigator.vibrate) navigator.vibrate(12);
     }, 500);
@@ -2133,6 +2137,14 @@
     var t = e.touches[0];
     if (Math.abs(t.clientX - sx) > 10 || Math.abs(t.clientY - sy) > 10) stop();
   }, { passive: true });
+  window.addEventListener('message', function (e) {
+    if (!cur || !/youtube/.test(e.origin)) return;
+    var f = cur.querySelector('iframe.pv'); if (!f || e.source !== f.contentWindow) return;
+    var d = e.data; if (typeof d === 'string') { try { d = JSON.parse(d); } catch (x) { return; } }
+    if (d && ((d.event === 'onStateChange' && d.info === 1) || (d.event === 'infoDelivery' && d.info && d.info.playerState === 1))) {
+      var c = cur; setTimeout(function () { if (cur === c) { f.classList.add('on'); c.classList.add('pvr'); } }, 100);
+    }
+  });
   document.addEventListener('touchend', stop, { passive: true });
   document.addEventListener('touchcancel', stop, { passive: true });
   document.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('.card')) e.preventDefault(); });
