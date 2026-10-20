@@ -1604,7 +1604,7 @@
     (function () {
       var c = (curTrigger && curTrigger.closest && curTrigger.closest('.card')) || document.querySelector('.card[data-id="' + curId + '"]');
       var sc = c && c.closest('section');
-      if (/^#v=/.test(location.hash)) setHash(sc ? sc.id : '');
+      if (/^#v=/.test(location.hash)) setHash(window.__deepLink ? '' : (sc ? sc.id : ''));
     })();
     lb.hidden = true;
     stage.innerHTML = '';
@@ -1615,6 +1615,11 @@
     if (lastFocus) { try { lastFocus.focus({ preventScroll: true }); } catch (e) { lastFocus.focus(); } }
     if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(savedY, { immediate: true, force: true });
     window.scrollTo(0, savedY);
+    if (window.__deepLink) {
+      window.__deepLink = false;
+      if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(0, { immediate: true, force: true });
+      window.scrollTo(0, 0);
+    }
   }
   host.addEventListener('click', function (e) {
     var ab = e.target.closest('.aboutbtn');
@@ -1795,6 +1800,7 @@
       if (!card) return;
       var sec = card.closest('section');
       if (sec) { var y = Math.max(0, Math.round(sec.getBoundingClientRect().top + window.pageYOffset - 80)); if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(y, { immediate: true, force: true }); window.scrollTo(0, y); }
+      window.__deepLink = true;
       openPlayer(card.dataset.id, card.dataset.title, parseFloat(card.dataset.ar), card);
     }
     if (document.readyState === 'complete') setTimeout(go, 900); else window.addEventListener('load', function () { setTimeout(go, 900); });
