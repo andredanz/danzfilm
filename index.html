@@ -853,6 +853,11 @@
   .curring { left: -10px; top: -10px; width: 20px; height: 20px; }
   .curring::before { border-width: 1px; }
   .curring.big::before { transform: scale(1.5); background: rgba(240,168,30,.12); }
+  /* player arrows: just the arrow, no circle */
+  .lbnav { background: none !important; box-shadow: none; color: #F0A81E; width: 56px; height: 56px; margin-top: -28px; }
+  .lbnav svg { width: 34px; height: 34px; stroke-width: 2.6; filter: drop-shadow(0 2px 6px rgba(0,0,0,.7)); }
+  .lbnav:hover, .lbnav:focus-visible { background: none !important; color: #ffc24a; transform: scale(1.12); }
+  @media (max-width: 700px) { .lbnav { width: 44px; height: 44px; margin-top: -22px; } .lbnav svg { width: 28px; height: 28px; } }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
@@ -1575,9 +1580,26 @@
     if (c) { closePlayer(); var el = document.getElementById(c.dataset.sec); if (el) el.scrollIntoView(); }
   });
   var curId = '', curTrigger = null;
+  /* readable video links: #v=latina-americana instead of a code */
+  var SLUGS = null;
+  function buildSlugs() {
+    SLUGS = { byId: {}, bySlug: {} };
+    document.querySelectorAll('.card[data-id]').forEach(function (c) {
+      var id = c.dataset.id; if (SLUGS.byId[id]) return;
+      var skip = /^(andre|danz|film|films|short|the|and|for|with|des|les|par|pour|original|production|by|de|du|la|le|os|um|uma)$/;
+      var words = (c.dataset.title || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/['’]/g, '').split(/[^a-z0-9]+/).filter(function (w) { return w.length > 2 && !skip.test(w); });
+      var h = 5381; for (var k = 0; k < id.length; k++) h = ((h << 5) + h + id.charCodeAt(k)) >>> 0;
+      var num = 10000 + (h % 90000);
+      var sl = (words.slice(0, 2).join('') || 'video') + num;
+      while (SLUGS.bySlug[sl]) sl = (words.slice(0, 2).join('') || 'video') + (++num);
+      SLUGS.byId[id] = sl; SLUGS.bySlug[sl] = id;
+    });
+  }
+  function slugOf(id) { if (!SLUGS) buildSlugs(); return SLUGS.byId[id] || id; }
+  function idOf(v) { if (!SLUGS) buildSlugs(); return SLUGS.bySlug[v] || v; }
   function openPlayer(id, title, ar, trigger) {
     curId = id; curTrigger = trigger;
-    try { history.replaceState(null, '', '#v=' + id); } catch (x) {}
+    try { history.replaceState(null, '', '#v=' + slugOf(id)); } catch (x) {}
     lb.dataset.nav = '1';
     renderPhotos(id);
     renderMore(id);
@@ -1618,7 +1640,7 @@
     if (window.__deepLink) {
       window.__deepLink = false;
       if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(0, { immediate: true, force: true });
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
   }
   host.addEventListener('click', function (e) {
@@ -1634,7 +1656,7 @@
     var m = e.target.closest('.more[data-for]');
     if (m) {
       var g = document.getElementById(m.dataset.for);
-      if (g.dataset.open === '1') { foldGrid(g, false, function () { g.closest('section').scrollIntoView(); }); }
+      if (g.dataset.open === '1') { foldGrid(g, true); }
       else { g.dataset.open = '1'; layoutGrid(g); }
       setHash(g.closest('section').id);
       return;
@@ -1671,7 +1693,7 @@
     if (!(h1 < h0) || document.documentElement.classList.contains('noanim')) { g.dataset.open = '0'; layoutGrid(g); if (done) done(); return; }
     g.dataset.anim = '1';
     g.style.overflow = 'hidden'; g.style.height = h0 + 'px';
-    var nx = g.closest('section').nextElementSibling, last = nx ? nx.getBoundingClientRect().top : 0;
+    var nx = btn || g.closest('section').nextElementSibling, last = nx ? nx.getBoundingClientRect().top : 0;
     var T = 520, t0 = Date.now();
     (function tick() {
       var p = Math.min(1, (Date.now() - t0) / T), e = 1 - Math.pow(1 - p, 3);
@@ -1681,7 +1703,7 @@
         var now = nx.getBoundingClientRect().top, dy = now - last;
         if (dy) {
           if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(window.scrollY + dy, { immediate: true, force: true });
-          else window.scrollBy(0, dy);
+          else window.scrollTo({ top: window.scrollY + dy, left: 0, behavior: 'instant' });
         }
         last = nx.getBoundingClientRect().top;
       }
@@ -1793,13 +1815,13 @@
   lb.addEventListener('click', function (e) { if (e.target === lb) closePlayer(); });
   /* A link like danzfilm.com/#v=VIDEOID opens that video straight away */
   (function () {
-    var m = /^#v=([\w-]{6,20})$/.exec(location.hash);
+    var m = /^#v=([^&\s]+)$/.exec(location.hash);
     if (!m) return;
     function go() {
-      var card = document.querySelector('.card[data-id="' + m[1] + '"]');
+      var card = document.querySelector('.card[data-id="' + idOf(decodeURIComponent(m[1])).replace(/"/g, '') + '"]');
       if (!card) return;
       var sec = card.closest('section');
-      if (sec) { var y = Math.max(0, Math.round(sec.getBoundingClientRect().top + window.pageYOffset - 80)); if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(y, { immediate: true, force: true }); window.scrollTo(0, y); }
+      if (sec) { var y = Math.max(0, Math.round(sec.getBoundingClientRect().top + window.pageYOffset - 80)); if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(y, { immediate: true, force: true }); window.scrollTo({ top: y, left: 0, behavior: 'instant' }); }
       window.__deepLink = true;
       openPlayer(card.dataset.id, card.dataset.title, parseFloat(card.dataset.ar), card);
     }
