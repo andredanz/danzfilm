@@ -556,7 +556,7 @@
   .lb:not([hidden]) .stage { animation: stageIn .4s cubic-bezier(.2,.7,.2,1) backwards; }
   .fbview:not([hidden]) img { animation: focusPull .38s cubic-bezier(.2,.7,.2,1) backwards; }
   /* hover preview */
-  .card iframe.pv { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; pointer-events: none; opacity: 0; transition: opacity .4s; transform: scale(var(--z, 1)); transform-origin: var(--ox, 50%) var(--oy, 50%); background: #000; }
+  .card iframe.pv { position: absolute; left: 50%; top: 50%; width: 200%; height: 200%; border: 0; pointer-events: none; opacity: 0; transition: opacity .4s; transform: translate(-50%, -50%) scale(calc(var(--z, 1) * .5)); transform-origin: 50% 50%; background: #000; }
   .card iframe.pv.on { opacity: 1; }
   @media (hover: none) { .card { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; } .card img { -webkit-user-drag: none; } }
   /* opening: the featured frame opens up from a small window, the text rises in */
@@ -2074,7 +2074,7 @@
       f.className = 'pv';
       f.setAttribute('allow', 'autoplay');
       f.setAttribute('tabindex', '-1');
-      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1&start=2&origin=' + encodeURIComponent(location.origin);
+      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&vq=hd720&enablejsapi=1&start=2&origin=' + encodeURIComponent(location.origin);
       f.onload = function () { listen(f); setTimeout(function () { listen(f); }, 400); };
       c.insertBefore(f, c.querySelector('.play'));
       pool.push(f);
@@ -2113,8 +2113,19 @@
     if (d.event === 'onReady' || d.event === 'initialDelivery' || d.event === 'infoDelivery') f.dataset.ready = '1';
     var state = d.event === 'onStateChange' ? d.info : (d.event === 'infoDelivery' && d.info ? d.info.playerState : undefined);
     var card = f.closest('.card');
+    /* show the video only once it plays in decent quality (YouTube starts low and then climbs); never wait more than ~1.6 s */
+    if (d.event === 'infoDelivery' && d.info && d.info.playbackQuality) {
+      f.dataset.q = d.info.playbackQuality;
+      if (f.dataset.playing === '1' && card === cur && /^(large|hd720|hd1080|hd1440|hd2160|highres)$/.test(f.dataset.q)) showOn(card, f);
+    }
+    if (state !== undefined && state !== 1 && state !== 3) f.dataset.playing = '0';
     if (state === 1) {
-      if (card === cur) setTimeout(function () { if (cur === card) showOn(card, f); }, 100);
+      f.dataset.playing = '1';
+      cmd(f, 'setPlaybackQuality', ['hd720']);
+      if (card === cur) {
+        if (/^(large|hd720|hd1080|hd1440|hd2160|highres)$/.test(f.dataset.q || '')) setTimeout(function () { if (cur === card) showOn(card, f); }, 100);
+        else setTimeout(function () { if (cur === card) showOn(card, f); }, 1600);
+      }
       else { cmd(f, 'pauseVideo'); cmd(f, 'seekTo', [2, true]); }
     } else if (state === -1 || state === 5 || state === 2 || state === 3) {
       if (card === cur && state !== 3) { cmd(f, 'mute'); cmd(f, 'playVideo'); }
@@ -2146,7 +2157,7 @@
       setTimeout(function () { if (cur === c) c.classList.add('pvr'); }, 3500);
       var f = document.createElement('iframe');
       f.className = 'pv'; f.setAttribute('allow', 'autoplay'); f.setAttribute('tabindex', '-1');
-      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1&origin=' + encodeURIComponent(location.origin);
+      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&vq=hd720&enablejsapi=1&origin=' + encodeURIComponent(location.origin);
       f.onload = function () { var m = JSON.stringify({ event: 'listening', id: 1 }); try { f.contentWindow.postMessage(m, '*'); } catch (x) {} setTimeout(function () { try { f.contentWindow.postMessage(m, '*'); } catch (x) {} }, 400); };
       c.insertBefore(f, c.querySelector('.play'));
       if (navigator.vibrate) navigator.vibrate(12);
