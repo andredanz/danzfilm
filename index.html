@@ -861,6 +861,15 @@
   .card .pvwipe svg { width: 38px; height: 38px; fill: none; stroke: #472F22; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; overflow: visible; }
   .card .pvwipe .wa { transform-box: fill-box; transform-origin: 0% 100%; animation: pvclap .5s ease-in-out infinite; }
   @keyframes pvclap { 0%, 100% { transform: rotate(-18deg); } 50% { transform: rotate(0deg); } }
+
+  /* phones: arrows in their own row under the video */
+  .lbnavrow { display: none; }
+  @media (max-width: 700px) {
+    .lbnavrow { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 2px; }
+    .lb[data-nav="0"] .lbnavrow { display: none; }
+    .lb .lbnavrow .lbnav { position: static; z-index: auto; width: 46px; height: 46px; margin: 0; display: grid; border: 0 !important; background: #F0A81E !important; color: #0b0907 !important; box-shadow: none; opacity: 1; }
+    .lb .lbnavrow .lbnav svg { width: 22px; height: 22px; stroke: #0b0907; }
+  }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
@@ -1840,6 +1849,16 @@
     bp.setAttribute('aria-label', 'Previous video'); bn.setAttribute('aria-label', 'Next video');
     bp.innerHTML = ARW; bn.innerHTML = ARW;
     lb.appendChild(bp); lb.appendChild(bn);
+    /* on phones the arrows sit in their own row under the video (floating over the page they got in the way of the decks below) */
+    var mq = window.matchMedia('(max-width: 700px)');
+    var row = document.createElement('div'); row.className = 'lbnavrow';
+    function place() {
+      var bar = document.getElementById('lbclose').parentNode;
+      if (mq.matches) { bar.parentNode.insertBefore(row, bar); row.appendChild(bp); row.appendChild(bn); }
+      else { if (row.parentNode) row.parentNode.removeChild(row); lb.appendChild(bp); lb.appendChild(bn); }
+    }
+    place();
+    if (mq.addEventListener) mq.addEventListener('change', place); else if (mq.addListener) mq.addListener(place);
     function siblings() {
       var card = (curTrigger && curTrigger.closest && curTrigger.closest('.card')) || document.querySelector('.card[data-id="' + curId + '"]');
       var grid = card && card.closest('.grid');
