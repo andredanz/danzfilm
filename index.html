@@ -853,6 +853,14 @@
   .curring { left: -10px; top: -10px; width: 20px; height: 20px; }
   .curring::before { border-width: 1px; }
   .curring.big::before { transform: scale(1.5); background: rgba(240,168,30,.12); }
+
+  /* hover preview: yellow wipe while the video loads */
+  .card .pvwipe { position: absolute; inset: 0; z-index: 3; background: #F0A81E; display: grid; place-items: center; pointer-events: none; transform: translateY(101%); transition: transform .24s cubic-bezier(.7, 0, .2, 1); }
+  .card.pvw .pvwipe { transform: none; }
+  .card.pvw.pvr .pvwipe { transform: translateY(-101%); transition-duration: .3s; }
+  .card .pvwipe svg { width: 38px; height: 38px; fill: none; stroke: #472F22; stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; overflow: visible; }
+  .card .pvwipe .wa { transform-box: fill-box; transform-origin: 0% 100%; animation: pvclap .5s ease-in-out infinite; }
+  @keyframes pvclap { 0%, 100% { transform: rotate(-18deg); } 50% { transform: rotate(0deg); } }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
@@ -2026,9 +2034,20 @@
   function pvOf(c) { return c && c.querySelector('iframe.pv'); }
   function stop() {
     clearTimeout(timer); clearTimeout(retry);
-    if (cur) { var f = pvOf(cur); if (f) { f.classList.remove('on'); if (f.dataset.ready === '1') { cmd(f, 'pauseVideo'); cmd(f, 'seekTo', [2, true]); } } cur = null; }
+    if (cur) { wipeReset(cur); var f = pvOf(cur); if (f) { f.classList.remove('on'); if (f.dataset.ready === '1') { cmd(f, 'pauseVideo'); cmd(f, 'seekTo', [2, true]); } } cur = null; }
   }
+  /* a quick yellow wipe covers the card while the player loads, then lifts away the moment the video is really playing */
+  function wipeReset(c) {
+    var w = c.querySelector('.pvwipe'); if (!w) return;
+    w.style.transition = 'none'; c.classList.remove('pvw', 'pvr'); void w.offsetWidth; w.style.transition = '';
+  }
+  function showOn(c, f) { f.classList.add('on'); c.classList.add('pvr'); }
   function begin(c) {
+    if (!c.querySelector('.pvwipe')) { var w = document.createElement('i'); w.className = 'pvwipe'; w.innerHTML = '<svg viewBox="0 0 48 48" aria-hidden="true"><g><rect x="6" y="19" width="36" height="22" rx="2"/><path d="M6 26h36M15 26l-4 7M26 26l-4 7M37 26l-4 7"/></g><g class="wa"><rect x="6" y="11" width="36" height="8" rx="2"/><path d="M14 11l-4 8M25 11l-4 8M36 11l-4 8"/></g></svg>'; c.appendChild(w); }
+    c.classList.remove('pvr'); c.classList.add('pvw');
+    var ff = pvOf(c);
+    if (ff && ff.classList.contains('on')) c.classList.add('pvr');
+    setTimeout(function () { if (cur === c) c.classList.add('pvr'); }, 3500);
     var f = pvOf(c);
     if (!f) {
       f = document.createElement('iframe');
@@ -2075,7 +2094,7 @@
     var state = d.event === 'onStateChange' ? d.info : (d.event === 'infoDelivery' && d.info ? d.info.playerState : undefined);
     var card = f.closest('.card');
     if (state === 1) {
-      if (card === cur) setTimeout(function () { if (cur === card) f.classList.add('on'); }, 100);
+      if (card === cur) setTimeout(function () { if (cur === card) showOn(card, f); }, 100);
       else { cmd(f, 'pauseVideo'); cmd(f, 'seekTo', [2, true]); }
     } else if (state === -1 || state === 5 || state === 2 || state === 3) {
       if (card === cur && state !== 3) { cmd(f, 'mute'); cmd(f, 'playVideo'); }
