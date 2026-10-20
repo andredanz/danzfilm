@@ -1531,7 +1531,9 @@
     stack.addEventListener('pointerup', end);
     stack.addEventListener('pointercancel', end);
     stack.addEventListener('click', function (e) {
+      /* the pointer is captured by the stack while pressing, so the click target is the stack itself: find the card under the pointer */
       var c = e.target.closest('.pcard');
+      if (!c) { var els = document.elementsFromPoint(e.clientX, e.clientY); for (var q = 0; q < els.length; q++) { var pc = els[q].closest && els[q].closest('.pcard'); if (pc && stack.contains(pc)) { c = pc; break; } } }
       if (!c || stack.dataset.dragged || c !== cs[idx]) return;
       openPlayer(c.dataset.id, c.dataset.title, parseFloat(c.dataset.ar), c);
     });
