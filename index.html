@@ -11,6 +11,7 @@
 <meta name="description" content="Danz Film - André Danz, filmmaker and videomaker based in Paris. Short films, reels, fashion, events, commercial and music videos.">
 <link rel="canonical" href="https://danzfilm.com/">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Person", "name": "André Danz", "alternateName": "Danz Film", "url": "https://danzfilm.com/", "jobTitle": "Filmmaker", "description": "Brazilian filmmaker and videomaker based in Paris. Short films, reels, fashion, events, commercial and music videos.", "email": "mailto:danzfilm@gmail.com", "address": {"@type": "PostalAddress", "addressLocality": "Paris", "addressCountry": "FR"}, "sameAs": ["https://www.instagram.com/andredanz/"], "image": "https://danzfilm.com/og.png"}</script>
+<meta name="theme-color" content="#0b0907">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Danz Film">
 <meta property="og:title" content="Danz Film - André Danz">
@@ -829,6 +830,22 @@
   .eggx { position: absolute; top: max(18px, env(safe-area-inset-top, 0px)); right: max(18px, env(safe-area-inset-right, 0px)); width: 44px; height: 44px; border: 0; border-radius: 50%; background: #F0A81E; cursor: pointer; }
   .eggx span { position: absolute; left: 13px; top: 21px; width: 18px; height: 2px; background: #0b0907; transform: rotate(45deg); }
   .eggx span + span { transform: rotate(-45deg); }
+
+  /* player: previous / next video */
+  .lbnav { position: fixed; z-index: 4; top: 50%; width: 48px; height: 48px; margin-top: -24px; border-radius: 50%; border: 0; background: #F0A81E; color: #0b0907; display: grid; place-items: center; cursor: pointer; padding: 0; box-shadow: 0 6px 22px rgba(0,0,0,.45); transition: transform .2s, background .2s; }
+  .lbnav svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .lbprev { left: max(14px, env(safe-area-inset-left, 0px)); }
+  .lbnext { right: max(14px, env(safe-area-inset-right, 0px)); }
+  .lbnext svg { transform: scaleX(-1); }
+  .lbnav:hover, .lbnav:focus-visible { background: #ffc24a; transform: scale(1.08); }
+  .lb[hidden] .lbnav, .lb[data-nav="0"] .lbnav { display: none; }
+  @media (max-width: 700px) { .lbnav { width: 40px; height: 40px; margin-top: -20px; opacity: .92; } .lbprev { left: 8px; } .lbnext { right: 8px; } }
+  /* cursor ring */
+  .curring { position: fixed; z-index: 100000; left: -18px; top: -18px; width: 36px; height: 36px; pointer-events: none; opacity: 0; will-change: transform; }
+  .curring::before { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 1.5px solid #F0A81E; background: rgba(240,168,30,0); transition: transform .25s cubic-bezier(.2,.8,.2,1), background .25s, opacity .2s; }
+  .curring.show { opacity: 1; }
+  .curring.hide { opacity: 0; }
+  .curring.big::before { transform: scale(1.7); background: rgba(240,168,30,.14); }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
@@ -1550,7 +1567,10 @@
     var c = e.target.closest('.mcat');
     if (c) { closePlayer(); var el = document.getElementById(c.dataset.sec); if (el) el.scrollIntoView(); }
   });
+  var curId = '', curTrigger = null;
   function openPlayer(id, title, ar, trigger) {
+    curId = id; curTrigger = trigger;
+    lb.dataset.nav = '1';
     renderPhotos(id);
     renderMore(id);
     lb.scrollTop = 0;
@@ -1565,6 +1585,7 @@
     showLightbox(title, 'https://www.youtube.com/watch?v=' + id, t('open.yt'), trigger);
   }
   function openImage(src, title, trigger) {
+    lb.dataset.nav = '0';
     renderPhotos('');
     document.getElementById('lbmore').hidden = true;
     stage.className = 'stage imgmode';
@@ -1752,6 +1773,56 @@
     lb.addEventListener('touchcancel', end);
   })();
   lb.addEventListener('click', function (e) { if (e.target === lb) closePlayer(); });
+  /* Previous / next video of the same category inside the player (buttons and arrow keys) */
+  (function () {
+    var ARW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+    var bp = document.createElement('button'), bn = document.createElement('button');
+    bp.type = bn.type = 'button'; bp.className = 'lbnav lbprev'; bn.className = 'lbnav lbnext';
+    bp.setAttribute('aria-label', 'Previous video'); bn.setAttribute('aria-label', 'Next video');
+    bp.innerHTML = ARW; bn.innerHTML = ARW;
+    lb.appendChild(bp); lb.appendChild(bn);
+    function siblings() {
+      var card = (curTrigger && curTrigger.closest && curTrigger.closest('.card')) || document.querySelector('.card[data-id="' + curId + '"]');
+      var grid = card && card.closest('.grid');
+      if (!grid) return null;
+      var list = Array.prototype.slice.call(grid.querySelectorAll('.card'));
+      var i = list.indexOf(card);
+      return i < 0 ? null : { list: list, i: i };
+    }
+    function go(d) {
+      var sb = siblings(); if (!sb || sb.list.length < 2) return;
+      var n = sb.list[(sb.i + d + sb.list.length) % sb.list.length];
+      openPlayer(n.dataset.id, n.dataset.title, parseFloat(n.dataset.ar), n);
+    }
+    bp.addEventListener('click', function () { go(-1); });
+    bn.addEventListener('click', function () { go(1); });
+    document.addEventListener('keydown', function (e) {
+      if (lb.hidden || lb.dataset.nav !== '1') return;
+      if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1);
+    });
+  })();
+  /* Cursor ring: a soft yellow ring trails the pointer and grows over things you can click (desktop only; the normal cursor stays) */
+  (function () {
+    if (!window.matchMedia || !matchMedia('(hover: hover) and (pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    var ring = document.createElement('div'); ring.className = 'curring'; ring.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(ring);
+    var x = -100, y = -100, rx = -100, ry = -100, on = false;
+    document.addEventListener('mousemove', function (e) {
+      x = e.clientX; y = e.clientY;
+      if (!on) { on = true; rx = x; ry = y; ring.classList.add('show'); }
+    }, { passive: true });
+    document.addEventListener('mouseover', function (e) {
+      var t = e.target;
+      ring.classList.toggle('hide', !!(t && t.tagName === 'IFRAME'));
+      ring.classList.toggle('big', !!(t.closest && t.closest('a, button, .card, .certcard, .shotbtn, .pile, [role="button"]')));
+    }, { passive: true });
+    document.documentElement.addEventListener('mouseleave', function () { ring.classList.remove('show'); on = false; });
+    (function loop() {
+      rx += (x - rx) * 0.2; ry += (y - ry) * 0.2;
+      ring.style.transform = 'translate(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px)';
+      requestAnimationFrame(loop);
+    })();
+  })();
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lb.hidden) closePlayer(); });
 
   /* Featured video at the top: starts muted and loops; a click turns the sound on or off */
