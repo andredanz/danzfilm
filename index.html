@@ -2016,13 +2016,42 @@
   }, true);
 })();
 
-/* hover preview: muted video plays when the pointer rests on a horizontal card */
+/* hover preview: muted video plays when the pointer rests on a horizontal card.
+   The player is created on the first hover and then kept (paused, hidden) so the next hover starts at once; it only becomes visible when it is really playing. */
 (function () {
   if (!window.matchMedia || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
-  var timer = null, cur = null;
+  var timer = null, cur = null, pool = [], retry = null;
+  function cmd(f, func, args) { try { f.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: args || [] }), '*'); } catch (x) {} }
+  function listen(f) { try { f.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*'); } catch (x) {} }
+  function pvOf(c) { return c && c.querySelector('iframe.pv'); }
   function stop() {
-    clearTimeout(timer);
-    if (cur) { var f = cur.querySelector('iframe.pv'); if (f) f.remove(); cur = null; }
+    clearTimeout(timer); clearTimeout(retry);
+    if (cur) { var f = pvOf(cur); if (f) { f.classList.remove('on'); if (f.dataset.ready === '1') { cmd(f, 'pauseVideo'); cmd(f, 'seekTo', [2, true]); } } cur = null; }
+  }
+  function begin(c) {
+    var f = pvOf(c);
+    if (!f) {
+      f = document.createElement('iframe');
+      f.className = 'pv';
+      f.setAttribute('allow', 'autoplay');
+      f.setAttribute('tabindex', '-1');
+      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1&start=2&origin=' + encodeURIComponent(location.origin);
+      f.onload = function () { listen(f); setTimeout(function () { listen(f); }, 400); };
+      c.insertBefore(f, c.querySelector('.play'));
+      pool.push(f);
+      if (pool.length > 8) { var old = pool.shift(); if (old !== f && old.parentNode) old.remove(); }
+    } else if (f.dataset.ready === '1') {
+      cmd(f, 'mute'); cmd(f, 'playVideo');
+    }
+    cur = c;
+    /* if it has not started after a moment, ask again */
+    (function again(n) {
+      retry = setTimeout(function () {
+        if (cur !== c || (pvOf(c) && pvOf(c).classList.contains('on'))) return;
+        var g = pvOf(c); if (g) { listen(g); cmd(g, 'mute'); cmd(g, 'playVideo'); }
+        if (n < 4) again(n + 1);
+      }, 900);
+    })(0);
   }
   document.addEventListener('pointerover', function (e) {
     var c = e.target.closest && e.target.closest('.card');
@@ -2030,28 +2059,27 @@
     stop();
     if (!c || c.classList.contains('blur') || c.closest('.grid.vertical') || c.closest('.dim')) return;
     if (document.querySelector('#lb:not([hidden])')) return;
-    timer = setTimeout(function () {
-      var f = document.createElement('iframe');
-      f.className = 'pv';
-      f.setAttribute('allow', 'autoplay');
-      f.setAttribute('tabindex', '-1');
-      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1&start=2&origin=' + encodeURIComponent(location.origin);
-      /* stays invisible (the card's own picture shows) until the player reports that it is really playing: no black flash */
-      f.onload = function () { try { f.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*'); } catch (x) {} };
-      c.insertBefore(f, c.querySelector('.play'));
-      cur = c;
-    }, 180);
+    timer = setTimeout(function () { begin(c); }, 80);
   });
   document.addEventListener('pointerout', function (e) {
     if (cur && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.card') === cur)) stop();
   });
   window.addEventListener('message', function (e) {
-    if (!cur || !/youtube/.test(e.origin)) return;
-    var f = cur.querySelector('iframe.pv'); if (!f || e.source !== f.contentWindow) return;
+    if (!/youtube/.test(e.origin)) return;
+    var f = null;
+    for (var q = 0; q < pool.length; q++) if (pool[q].contentWindow === e.source) { f = pool[q]; break; }
+    if (!f) return;
     var d = e.data; if (typeof d === 'string') { try { d = JSON.parse(d); } catch (x) { return; } }
     if (!d) return;
-    if ((d.event === 'onStateChange' && d.info === 1) || (d.event === 'infoDelivery' && d.info && d.info.playerState === 1)) {
-      setTimeout(function () { f.classList.add('on'); }, 120);
+    if (d.event === 'onReady' || d.event === 'initialDelivery' || d.event === 'infoDelivery') f.dataset.ready = '1';
+    var state = d.event === 'onStateChange' ? d.info : (d.event === 'infoDelivery' && d.info ? d.info.playerState : undefined);
+    var card = f.closest('.card');
+    if (state === 1) {
+      if (card === cur) setTimeout(function () { if (cur === card) f.classList.add('on'); }, 100);
+      else { cmd(f, 'pauseVideo'); cmd(f, 'seekTo', [2, true]); }
+    } else if (state === -1 || state === 5 || state === 2 || state === 3) {
+      if (card === cur && state !== 3) { cmd(f, 'mute'); cmd(f, 'playVideo'); }
+      if (card !== cur && state === 1) cmd(f, 'pauseVideo');
     }
   });
   document.addEventListener('click', stop, true);
