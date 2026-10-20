@@ -853,11 +853,6 @@
   .curring { left: -10px; top: -10px; width: 20px; height: 20px; }
   .curring::before { border-width: 1px; }
   .curring.big::before { transform: scale(1.5); background: rgba(240,168,30,.12); }
-  /* player arrows: just the arrow, no circle */
-  .lbnav { background: none !important; box-shadow: none; color: #F0A81E; width: 56px; height: 56px; margin-top: -28px; }
-  .lbnav svg { width: 34px; height: 34px; stroke-width: 2.6; filter: drop-shadow(0 2px 6px rgba(0,0,0,.7)); }
-  .lbnav:hover, .lbnav:focus-visible { background: none !important; color: #ffc24a; transform: scale(1.12); }
-  @media (max-width: 700px) { .lbnav { width: 44px; height: 44px; margin-top: -22px; } .lbnav svg { width: 28px; height: 28px; } }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
@@ -1854,28 +1849,6 @@
       if (lb.hidden || lb.dataset.nav !== '1') return;
       if (e.key === 'ArrowRight') go(1); else if (e.key === 'ArrowLeft') go(-1);
     });
-  })();
-  /* Cursor ring: a soft yellow ring trails the pointer and grows over things you can click (desktop only; the normal cursor stays) */
-  (function () {
-    if (!window.matchMedia || !matchMedia('(hover: hover) and (pointer: fine)').matches || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    var ring = document.createElement('div'); ring.className = 'curring'; ring.setAttribute('aria-hidden', 'true');
-    document.body.appendChild(ring);
-    var x = -100, y = -100, rx = -100, ry = -100, on = false;
-    document.addEventListener('mousemove', function (e) {
-      x = e.clientX; y = e.clientY;
-      if (!on) { on = true; rx = x; ry = y; ring.classList.add('show'); }
-    }, { passive: true });
-    document.addEventListener('mouseover', function (e) {
-      var t = e.target;
-      ring.classList.toggle('hide', !!(t && t.tagName === 'IFRAME'));
-      ring.classList.toggle('big', !!(t.closest && t.closest('a, button, .card, .certcard, .shotbtn, .pile, [role="button"]')));
-    }, { passive: true });
-    document.documentElement.addEventListener('mouseleave', function () { ring.classList.remove('show'); on = false; });
-    (function loop() {
-      rx += (x - rx) * 0.2; ry += (y - ry) * 0.2;
-      ring.style.transform = 'translate(' + rx.toFixed(1) + 'px,' + ry.toFixed(1) + 'px)';
-      requestAnimationFrame(loop);
-    })();
   })();
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lb.hidden) closePlayer(); });
 
