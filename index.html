@@ -874,9 +874,9 @@
   }
 
   /* contact screen: opens and closes with the same yellow DANZ pattern as the site entrance; the letters dissolve slowly into the yellow */
-  .cov::before { content: ''; position: fixed; inset: 0; z-index: 5; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; opacity: 1; filter: blur(0); transform: scale(1); transition: opacity .65s cubic-bezier(.4, 0, .6, 1) .5s, filter .65s ease .5s, transform .8s ease .5s; }
-  .cov.in::before { opacity: 0; filter: blur(5px); transform: scale(1.06); }
-  .cov.out::before { opacity: 1; filter: blur(0); transform: scale(1); transition: opacity .3s ease 0s, filter .3s ease 0s, transform .3s ease 0s; }
+  .cov::before { content: ''; position: fixed; inset: 0; z-index: 5; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; opacity: 1; transition: opacity .65s ease-in-out .5s; }
+  .cov.in::before { opacity: 0; }
+  .cov.out::before { opacity: 1; transition: opacity .3s ease 0s; }
   .cov > * { opacity: 0; transition: opacity .12s ease 0s; }
   .cov.in > * { opacity: 1; transition: opacity .4s ease .85s; }
   .cov.out { transition-delay: .25s; }
