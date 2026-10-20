@@ -11,6 +11,8 @@
 <meta name="description" content="Danz Film - André Danz, filmmaker and videomaker based in Paris. Short films, reels, fashion, events, commercial and music videos.">
 <link rel="canonical" href="https://danzfilm.com/">
 <script type="application/ld+json">{"@context": "https://schema.org", "@type": "Person", "name": "André Danz", "alternateName": "Danz Film", "url": "https://danzfilm.com/", "jobTitle": "Filmmaker", "description": "Brazilian filmmaker and videomaker based in Paris. Short films, reels, fashion, events, commercial and music videos.", "email": "mailto:danzfilm@gmail.com", "address": {"@type": "PostalAddress", "addressLocality": "Paris", "addressCountry": "FR"}, "sameAs": ["https://www.instagram.com/andredanz/"], "image": "https://danzfilm.com/og.png"}</script>
+<link rel="preconnect" href="https://www.youtube-nocookie.com">
+<link rel="preconnect" href="https://i.ytimg.com">
 <meta name="theme-color" content="#0b0907">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Danz Film">
@@ -846,6 +848,11 @@
   .curring.show { opacity: 1; }
   .curring.hide { opacity: 0; }
   .curring.big::before { transform: scale(1.7); background: rgba(240,168,30,.14); }
+
+  /* cursor ring: smaller and quieter */
+  .curring { left: -10px; top: -10px; width: 20px; height: 20px; }
+  .curring::before { border-width: 1px; }
+  .curring.big::before { transform: scale(1.5); background: rgba(240,168,30,.12); }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
@@ -2006,14 +2013,24 @@
       f.className = 'pv';
       f.setAttribute('allow', 'autoplay');
       f.setAttribute('tabindex', '-1');
-      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1';
-      f.onload = function () { setTimeout(function () { f.classList.add('on'); }, 350); };
+      f.src = 'https://www.youtube-nocookie.com/embed/' + c.dataset.id + '?autoplay=1&mute=1&controls=0&modestbranding=1&playsinline=1&rel=0&iv_load_policy=3&disablekb=1&enablejsapi=1&start=2&origin=' + encodeURIComponent(location.origin);
+      /* stays invisible (the card's own picture shows) until the player reports that it is really playing: no black flash */
+      f.onload = function () { try { f.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*'); } catch (x) {} };
       c.insertBefore(f, c.querySelector('.play'));
       cur = c;
-    }, 450);
+    }, 180);
   });
   document.addEventListener('pointerout', function (e) {
     if (cur && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest('.card') === cur)) stop();
+  });
+  window.addEventListener('message', function (e) {
+    if (!cur || !/youtube/.test(e.origin)) return;
+    var f = cur.querySelector('iframe.pv'); if (!f || e.source !== f.contentWindow) return;
+    var d = e.data; if (typeof d === 'string') { try { d = JSON.parse(d); } catch (x) { return; } }
+    if (!d) return;
+    if ((d.event === 'onStateChange' && d.info === 1) || (d.event === 'infoDelivery' && d.info && d.info.playerState === 1)) {
+      setTimeout(function () { f.classList.add('on'); }, 120);
+    }
   });
   document.addEventListener('click', stop, true);
   window.addEventListener('scroll', stop, { passive: true });
