@@ -791,6 +791,15 @@
   @media (max-width: 560px) { #intro { background-size: 220px 220px; } }
   @media (prefers-reduced-motion: reduce) { #intro { display: none; } }
 
+
+  /* top video loop transition */
+  .featwipe { position: absolute; inset: 0; z-index: 2; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; transform: translateY(101%); transition: transform .34s cubic-bezier(.77,0,.18,1); }
+  .featwipe.on { transform: none; }
+  .featwipe.off { transform: translateY(-101%); transition-duration: .4s; }
+  .featwipe.rs { transform: translateY(101%); transition: none; }
+  @media (max-width: 560px) { .featwipe { background-size: 220px 220px; } }
+  @media (prefers-reduced-motion: reduce) { .featwipe { display: none; } }
+
   /* landscape cards, smaller titles, no extra zoom */
   .lbdeck .pile { max-width: 460px; }
   .lbdeck .pilestack { aspect-ratio: 4 / 3; margin-bottom: 170px; }
@@ -1913,6 +1922,42 @@
     featStage.innerHTML = '<a class="ytlink" href="https://www.youtube.com/watch?v=' + FEATURED + '" target="_blank" rel="noopener"><img src="https://i.ytimg.com/vi/' + FEATURED + '/maxresdefault.jpg" alt=""><span data-i18n="watch.yt">' + t('watch.yt') + '</span></a>';
     featBtn.hidden = true;
   }
+  /* Loop transition: the yellow DANZ pattern wipes over the top video just before it restarts, then wipes away */
+  (function () {
+    var ff = document.getElementById('featFrame');
+    if (!ff) return;
+    var fw = document.createElement('div');
+    fw.className = 'featwipe';
+    fw.setAttribute('aria-hidden', 'true');
+    featStage.appendChild(fw);
+    var covering = false, dur = 0, tm = 0;
+    function cover() {
+      if (covering) return;
+      covering = true;
+      fw.className = 'featwipe on';
+      clearTimeout(tm);
+      tm = setTimeout(reveal, 2200);
+    }
+    function reveal() {
+      if (!covering) return;
+      covering = false;
+      clearTimeout(tm);
+      fw.className = 'featwipe off';
+      setTimeout(function () { if (!covering) fw.className = 'featwipe rs'; }, 420);
+    }
+    function listen() { try { ff.contentWindow.postMessage(JSON.stringify({ event: 'listening', id: 1 }), '*'); } catch (x) {} }
+    ff.addEventListener('load', function () { listen(); setTimeout(listen, 500); setTimeout(listen, 1500); });
+    window.addEventListener('message', function (e) {
+      if (e.source !== ff.contentWindow) return;
+      var d; try { d = JSON.parse(e.data); } catch (x) { return; }
+      if (!d || d.event !== 'infoDelivery' || !d.info) return;
+      if (d.info.duration) dur = d.info.duration;
+      var ct = d.info.currentTime;
+      if (typeof ct !== 'number' || !dur) return;
+      if (!covering && dur - ct <= 0.75 && ct > 2) cover();
+      else if (covering && ct < Math.min(2, dur / 2)) setTimeout(reveal, 120);
+    });
+  })();
   function featCmd(func, args) {
     var f = document.getElementById('featFrame');
     if (f && f.contentWindow) f.contentWindow.postMessage(JSON.stringify({ event: 'command', func: func, args: args || [] }), '*');
