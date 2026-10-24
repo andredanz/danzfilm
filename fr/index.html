@@ -792,6 +792,9 @@
   @media (prefers-reduced-motion: reduce) { #intro { display: none; } }
 
 
+  /* opening 'See more' on the text grows it downward; the title stays put */
+  .head:has(.aboutfull:not([hidden])) { align-items: flex-start; }
+
   /* top video loop transition */
   .featwipe { position: absolute; inset: 0; z-index: 2; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; transform: translateY(101%); transition: transform .34s cubic-bezier(.77,0,.18,1); }
   .featwipe.on { transform: none; }
@@ -1104,6 +1107,9 @@
       ] },
       { id: 'CeO6yw-ug3E', c: 'France', t: 'Au-delà des Lumières — Bourg-la-Reine Danz film', photos: [
         { src: '/img/663f87c257.jpg', t: 'Bourg-la-Reine' }
+      ] },
+      { id: 'o1xwJw-pcIE', c: 'France', t: 'Au-delà des Lumières — Saint-Germain-en-Laye - Danzfilm', photos: [
+        { src: '/img/d29f4140a5.jpg', t: 'Saint-Germain-en-Laye' }
       ] }
     ]},
     { id: 'fashion', title: 'Fashion', about: '', items: [
