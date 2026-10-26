@@ -325,8 +325,9 @@
   @media (max-width: 1000px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
   @media (max-width: 620px) { .grid { grid-template-columns: minmax(0, 1fr); } }
   .morewrap { display: flex; justify-content: center; }
-  .more { margin-top: 28px; padding: 14px 28px; border: 1px solid var(--line); background: none; color: var(--fg); font: 500 12px/1 var(--label); letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: background 0.15s, border-color 0.15s, color 0.15s; }
-  .more:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .more { margin-top: 28px; padding: 14px 28px; border: 1px solid var(--line); border-radius: 0; background: none; color: var(--fg); font: 500 12px/1 var(--label); letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; transition: background .25s, border-color .25s, color .25s, border-radius .4s cubic-bezier(.2,.7,.2,1), transform .4s cubic-bezier(.2,.7,.2,1); }
+  .more:hover { background: var(--accent); border-color: var(--accent); color: var(--bg); border-radius: 999px; transform: scale(1.1); }
+  .more:active { transform: scale(1.03); }
   .card img { transform: scale(var(--z, 1)); transform-origin: var(--ox, 50%) var(--oy, 50%); }
   .card:hover img { transform: scale(calc(var(--z, 1) * 1.04)); }
   .card .bgimg, .card:hover .bgimg { filter: blur(22px) brightness(0.72); transform: scale(var(--bz, 2.6), 1.12); }
@@ -803,11 +804,14 @@
   .rpworld { position: absolute; left: 0; top: 0; will-change: transform; }
   .rp .rpc { position: absolute; display: block; aspect-ratio: auto; border-radius: 22px; overflow: hidden; will-change: transform, opacity; }
   .rp .rpc img { width: 100%; height: 100%; object-fit: cover; }
-  .rpx { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 16px; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(40,36,32,.82); color: #FCECCF; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .rpx { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 16px; width: 46px; height: 46px; border-radius: 50%; border: 0; background: #F0A81E; color: #0b0907; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
   .rpx svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
-  .rptabs { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 74px; right: 16px; height: 46px; padding: 4px; border-radius: 23px; background: rgba(40,36,32,.82); display: grid; grid-template-columns: 1fr 1fr; gap: 4px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
-  .rptabs button { border: 0; border-radius: 19px; background: none; color: rgba(252,236,207,.6); font: 600 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: background .2s, color .2s; }
-  .rptabs button.on { background: #F0A81E; color: #1a120a; }
+  .rptabs { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 74px; right: 116px; height: 46px; padding: 4px; border-radius: 23px; background: rgba(40,36,32,.82); display: grid; grid-template-columns: 1fr 1fr; gap: 4px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .rptabs { position: absolute; touch-action: none; -webkit-user-select: none; user-select: none; }
+  .rpthumb { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 12px) / 2); border-radius: 19px; background: #F0A81E; transition: transform .35s cubic-bezier(.2,.8,.2,1); cursor: grab; }
+  .rp[data-mode="list"] .rpthumb { transform: translateX(calc(100% + 4px)); }
+  .rptabs button { position: relative; z-index: 1; border: 0; border-radius: 19px; background: none; color: rgba(252,236,207,.6); font: 600 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: color .25s; }
+  .rptabs button.on { color: #1a120a; }
   .rplist { display: none; position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: calc(max(18px, env(safe-area-inset-top, 0px)) + 66px) 16px 40px; touch-action: pan-y; }
   .rp.list { touch-action: auto; }
   .rp.list .rpworld { display: none; }
@@ -815,6 +819,7 @@
   .rplist .card { border-radius: 16px; }
 
 
+  .rplogo { position: absolute; z-index: 3; top: calc(max(18px, env(safe-area-inset-top, 0px)) + 4px); right: 18px; width: 84px; aspect-ratio: 900 / 368; background-color: #F0A81E; -webkit-mask: var(--lg) center / contain no-repeat; mask: var(--lg) center / contain no-repeat; pointer-events: none; }
   .rptip { position: fixed; z-index: 5; padding: 10px 14px; border-radius: 12px; background: rgba(24,20,16,.86); color: #FCECCF; font: 600 11px/1.4 var(--label); letter-spacing: .1em; text-transform: uppercase; opacity: 0; transform: translateY(4px); transition: opacity .7s ease, transform .7s ease; pointer-events: none; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(252,236,207,.14); }
   .rptip.on { opacity: 1; transform: none; }
   .rp[data-mode="board"] { cursor: grab; }
@@ -824,6 +829,7 @@
   }
   @media (min-width: 701px) {
     .rpx { left: 28px; top: 24px; }
+    .rplogo { top: 28px; right: 32px; width: 104px; }
     .rptabs { top: 24px; left: 50%; right: auto; width: 300px; transform: translateX(-50%); }
     .rplist { padding: 100px 40px 60px; }
     .rplist .grid { max-width: 1240px; margin: 0 auto; }
@@ -1146,7 +1152,12 @@
       { id: 'ARA37B5udko', c: 'Brasil', t: 'Coliseu - Reels chef marguerita' },
       { id: 'wqUb5Eug9qY', c: 'Brasil', t: 'Force one - Reels modalidade force express' },
       { id: 'aFA7FYlv7HE', c: 'Brasil', t: 'Quintal - reels lanche e beer' },
-      { id: 'TYDSISaSFyA', c: 'Brasil', t: 'Quintal - Reels pub novas cervejas artesanais' }
+      { id: 'TYDSISaSFyA', c: 'Brasil', t: 'Quintal - Reels pub novas cervejas artesanais' },
+      { id: '2lgULY9u9a4', c: 'Brasil', t: 'Marcao - Reels seguros' },
+      { id: 'rI30KfmJuaU', c: 'Brasil', t: 'EVENT Cianorte festival 2024 - dia 6' },
+      { id: 'oZvdWsbJN2s', c: 'Brasil', t: 'Lucas Nerys - Reels Lentes' },
+      { id: 'L-8EU24SFP8', c: 'Brasil', t: 'Rodrigo fisio - Reels entenda a sua dor : joelho' },
+      { id: '1SNWG1LOi2c', c: 'Brasil', t: 'Diamond Hotel - Reels aesthestic 2024' }
     ]},
     { id: 'au-dela-des-lumieres', title: 'Au-delà des Lumières', about: 'au.short', aboutMore: ['au.1', 'au.2', 'au.3', 'au.4'], items: [
       { id: 'JFvvkxhNBSk', c: 'France', t: 'Au-delà des Lumières, Montmorency Danz Film', photos: [
@@ -1747,8 +1758,10 @@
       rp = document.createElement('div');
       rp.className = 'rp';
       rp.setAttribute('data-lenis-prevent', '');
-      rp.innerHTML = '<button type="button" class="rpx" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rptabs" role="tablist"><button type="button" role="tab" data-m="board"></button><button type="button" role="tab" data-m="list"></button></div><div class="rpworld"></div><div class="rptip" aria-hidden="true"></div><div class="rplist"><div class="grid vertical"></div></div>';
+      rp.innerHTML = '<button type="button" class="rpx" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rptabs" role="tablist"><span class="rpthumb"></span><button type="button" role="tab" data-m="board"></button><button type="button" role="tab" data-m="list"></button></div><div class="rpworld"></div><span class="rplogo" aria-hidden="true"></span><div class="rptip" aria-hidden="true"></div><div class="rplist"><div class="grid vertical"></div></div>';
       host.appendChild(rp);
+      var srcLogo = document.querySelector('.lblogo');
+      if (srcLogo) rp.querySelector('.rplogo').style.setProperty('--lg', srcLogo.style.getPropertyValue('--lg'));
       var x0 = 0, y0 = 0, px = 0, py = 0, vx = 0, vy = 0, lt = 0, down = false, tot = 0, moved = false;
       var W = 0, H = 0, vw = 0, vh = 0, cw = 0, ch = 0, items = [];
       var world = rp.querySelector('.rpworld');
@@ -1822,7 +1835,7 @@
       window.addEventListener('pointerup', up);
       window.addEventListener('pointercancel', up);
       rp.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
-      /* mouse: the title fades in softly after the pointer rests on a card for 1.5 s */
+      /* mouse: the title fades in softly after the pointer rests on a card for 0.7 s */
       var tipTimer = 0, tipCard = null, mx = 0, my = 0, tipEl = rp.querySelector('.rptip');
       function clearTip() { clearTimeout(tipTimer); tipEl.classList.remove('on'); tipCard = null; }
       rp.addEventListener('pointermove', function (e) { if (e.pointerType === 'mouse') { mx = e.clientX; my = e.clientY; } });
@@ -1841,7 +1854,7 @@
           tipEl.style.left = Math.max(12, Math.min(mx + 16, window.innerWidth - w - 12)) + 'px';
           tipEl.style.top = Math.max(12, Math.min(my + 20, window.innerHeight - 70)) + 'px';
           tipEl.classList.add('on');
-        }, 1500);
+        }, 700);
       });
       rp.addEventListener('pointerleave', clearTip);
       /* mouse wheel / trackpad pans the board */
@@ -1868,7 +1881,37 @@
         if (m === 'list') { rp.querySelector('.rplist').scrollTop = 0; down = false; }
         try { localStorage.setItem('reelsMode', m); } catch (x) {}
       };
-      rp.querySelector('.rptabs').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) rp._mode(b.dataset.m); });
+      var tabsEl = rp.querySelector('.rptabs'), thumb = tabsEl.querySelector('.rpthumb');
+      var tdrag = null, tmoved = false;
+      tabsEl.addEventListener('click', function (e) {
+        if (tmoved) { tmoved = false; return; }
+        var b = e.target.closest('button'); if (b) rp._mode(b.dataset.m);
+      });
+      /* press and hold the yellow pill and drag it over to the other side: Board <-> List */
+      tabsEl.addEventListener('pointerdown', function (e) {
+        var r = tabsEl.getBoundingClientRect(), tw = (r.width - 12) / 2;
+        tdrag = { x: e.clientX, max: tw + 4, base: rp.dataset.mode === 'list' ? tw + 4 : 0, tx: 0 };
+        tdrag.tx = tdrag.base; tmoved = false;
+      });
+      window.addEventListener('pointermove', function (e) {
+        if (!tdrag) return;
+        var dx = e.clientX - tdrag.x;
+        if (!tmoved && Math.abs(dx) < 5) return;
+        tmoved = true;
+        tdrag.tx = Math.max(0, Math.min(tdrag.max, tdrag.base + dx));
+        thumb.style.transition = 'none';
+        thumb.style.transform = 'translateX(' + tdrag.tx + 'px)';
+        var bb = tabsEl.querySelectorAll('button'), toList = tdrag.tx > tdrag.max / 2;
+        bb[0].classList.toggle('on', !toList); bb[1].classList.toggle('on', toList);
+      });
+      function tup() {
+        if (!tdrag) return;
+        var d = tdrag; tdrag = null;
+        thumb.style.transition = ''; thumb.style.transform = '';
+        if (tmoved) { rp._mode(d.tx > d.max / 2 ? 'list' : 'board'); setTimeout(function () { tmoved = false; }, 0); }
+      }
+      window.addEventListener('pointerup', tup);
+      window.addEventListener('pointercancel', tup);
       rp._reset = function () { px = Math.round((vw - W) / 2 > 0 ? (vw - W) / 2 : (vw - W) / 2); py = 0; vx = vy = 0; render(); };
     }
     rp._tabs();
