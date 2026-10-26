@@ -794,6 +794,18 @@
   /* opening 'See more' on the text grows it downward; the title stays put */
   .head:has(.aboutfull:not([hidden])) { align-items: flex-start; }
 
+
+  /* Reels board (phones): drag in any direction */
+  .rp { position: fixed; inset: 0; z-index: 40; background: #0b0907; overflow: hidden; touch-action: none; overscroll-behavior: none; opacity: 0; transition: opacity .25s ease; -webkit-user-select: none; user-select: none; }
+  .rp[hidden] { display: none; }
+  .rp.on { opacity: 1; }
+  .rpworld { position: absolute; left: 0; top: 0; will-change: transform; }
+  .rp .rpc { position: absolute; display: block; aspect-ratio: auto; border-radius: 22px; overflow: hidden; will-change: transform, opacity; }
+  .rp .rpc img { width: 100%; height: 100%; object-fit: cover; }
+  .rpx { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 16px; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(40,36,32,.82); color: #FCECCF; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .rpx svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+  .rppill { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 74px; right: 16px; height: 46px; border-radius: 23px; background: rgba(40,36,32,.82); color: #FCECCF; display: grid; place-items: center; font: 600 13px/1 var(--label); letter-spacing: .12em; text-transform: uppercase; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); pointer-events: none; }
+
   /* top video loop transition */
   .featwipe { position: absolute; inset: 0; z-index: 2; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; transform: translateY(101%); transition: transform .34s cubic-bezier(.77,0,.18,1); }
   .featwipe.on { transform: none; }
@@ -1689,6 +1701,109 @@
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     }
   }
+  /* Reels on a phone: "See more" opens a full-screen board of all reels that you drag in any direction (staggered columns, cards shrink and fade toward the edges) */
+  var mqPan = window.matchMedia('(max-width: 700px)');
+  var rp = null, rpRaf = 0;
+  function openReelsPan() {
+    var src = document.querySelectorAll('#grid-reels .card');
+    if (!src.length) return false;
+    if (!rp) {
+      rp = document.createElement('div');
+      rp.className = 'rp';
+      rp.innerHTML = '<button type="button" class="rpx" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rppill"></div><div class="rpworld"></div>';
+      host.appendChild(rp);
+      var x0 = 0, y0 = 0, px = 0, py = 0, vx = 0, vy = 0, lt = 0, down = false, tot = 0, moved = false;
+      var W = 0, H = 0, vw = 0, vh = 0, cw = 0, ch = 0, items = [];
+      var world = rp.querySelector('.rpworld');
+      rp._build = function () {
+        vw = window.innerWidth; vh = window.innerHeight;
+        cw = Math.min(Math.round(vw * 0.46), 230); ch = Math.round(cw * 1.7778);
+        var gap = 14, padX = 36, padTop = 110, padBot = 70, cols = 3;
+        world.innerHTML = ''; items = [];
+        for (var i = 0; i < src.length; i++) {
+          var n = src[i].cloneNode(true);
+          n.hidden = false; n.removeAttribute('style'); n.classList.add('rpc');
+          var c = i % cols, r = Math.floor(i / cols);
+          var x = padX + c * (cw + gap), y = padTop + r * (ch + gap) + (c % 2) * (ch / 2 + gap / 2);
+          n.style.width = cw + 'px'; n.style.height = ch + 'px'; n.style.left = x + 'px'; n.style.top = y + 'px';
+          world.appendChild(n);
+          items.push({ el: n, cx: x + cw / 2, cy: y + ch / 2 });
+        }
+        var rows = Math.ceil(src.length / cols);
+        W = padX * 2 + cols * cw + (cols - 1) * gap;
+        H = padTop + rows * ch + (rows - 1) * gap + ch / 2 + gap / 2 + padBot;
+        world.style.width = W + 'px'; world.style.height = H + 'px';
+      };
+      function minX() { return Math.min(0, vw - W); }
+      function minY() { return Math.min(0, vh - H); }
+      function render() {
+        world.style.transform = 'translate3d(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px,0)';
+        for (var i = 0; i < items.length; i++) {
+          var it = items[i];
+          var dx = (it.cx + px - vw / 2) / (vw * 0.8), dy = (it.cy + py - vh / 2) / (vh * 0.72);
+          var d = Math.min(1, Math.sqrt(dx * dx + dy * dy));
+          var sc = 1 - 0.34 * d * d, op = 1 - 0.55 * d * d * d;
+          it.el.style.transform = 'scale(' + sc.toFixed(3) + ')';
+          it.el.style.opacity = op.toFixed(3);
+        }
+      }
+      function clampSoft(v, lo, hi) { return v > hi ? hi + (v - hi) * 0.35 : v < lo ? lo + (v - lo) * 0.35 : v; }
+      function tick(ts) {
+        var dt = Math.min(32, ts - (lt || ts)); lt = ts;
+        if (!down) {
+          var k = dt / 16.7;
+          px += vx * k; py += vy * k;
+          var f = Math.pow(0.94, k); vx *= f; vy *= f;
+          var lx = minX(), ly = minY(), busy = Math.abs(vx) > 0.05 || Math.abs(vy) > 0.05;
+          if (px > 0) { px += (0 - px) * Math.min(1, 0.16 * k); vx *= 0.7; busy = busy || px > 0.3; }
+          else if (px < lx) { px += (lx - px) * Math.min(1, 0.16 * k); vx *= 0.7; busy = busy || px < lx - 0.3; }
+          if (py > 0) { py += (0 - py) * Math.min(1, 0.16 * k); vy *= 0.7; busy = busy || py > 0.3; }
+          else if (py < ly) { py += (ly - py) * Math.min(1, 0.16 * k); vy *= 0.7; busy = busy || py < ly - 0.3; }
+          render();
+          if (!busy) { rpRaf = 0; lt = 0; return; }
+        } else render();
+        rpRaf = requestAnimationFrame(tick);
+      }
+      function kick() { if (!rpRaf) { lt = 0; rpRaf = requestAnimationFrame(tick); } }
+      rp.addEventListener('pointerdown', function (e) {
+        if (e.target.closest('.rpx')) return;
+        down = true; moved = false; tot = 0; x0 = e.clientX; y0 = e.clientY; vx = vy = 0; kick();
+      });
+      window.addEventListener('pointermove', function (e) {
+        if (!down) return;
+        var dx = e.clientX - x0, dy = e.clientY - y0;
+        x0 = e.clientX; y0 = e.clientY; tot += Math.abs(dx) + Math.abs(dy);
+        if (tot > 8) moved = true;
+        px = clampSoft(px + dx, minX(), 0); py = clampSoft(py + dy, minY(), 0);
+        vx = vx * 0.5 + dx * 0.5; vy = vy * 0.5 + dy * 0.5;
+      });
+      function up() { if (!down) return; down = false; kick(); }
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+      rp.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
+      rp.querySelector('.rpx').addEventListener('click', function () { closeReelsPan(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && rp && rp.classList.contains('on') && lb.hidden) closeReelsPan(); });
+      rp._reset = function () { px = Math.round((vw - W) / 2 > 0 ? (vw - W) / 2 : (vw - W) / 2); py = 0; vx = vy = 0; render(); };
+    }
+    var h2 = document.querySelector('#reels h2');
+    rp.querySelector('.rppill').textContent = h2 ? (h2.getAttribute('aria-label') || h2.textContent) : 'Reels';
+    rp._build();
+    rp.hidden = false;
+    rp._reset();
+    void rp.offsetWidth;
+    rp.classList.add('on');
+    document.documentElement.style.overflow = 'hidden';
+    if (window.__lenis && window.__lenis.stop) window.__lenis.stop();
+    setHash('reels');
+    return true;
+  }
+  function closeReelsPan() {
+    if (!rp) return;
+    rp.classList.remove('on');
+    setTimeout(function () { if (!rp.classList.contains('on')) rp.hidden = true; }, 260);
+    document.documentElement.style.overflow = '';
+    if (window.__lenis && window.__lenis.start) window.__lenis.start();
+  }
   host.addEventListener('click', function (e) {
     var ab = e.target.closest('.aboutbtn');
     if (ab) {
@@ -1702,6 +1817,7 @@
     var m = e.target.closest('.more[data-for]');
     if (m) {
       var g = document.getElementById(m.dataset.for);
+      if (g.id === 'grid-reels' && mqPan.matches && g.dataset.open !== '1' && openReelsPan()) return;
       if (g.dataset.open === '1') { foldGrid(g, true); }
       else { g.dataset.open = '1'; layoutGrid(g); }
       setHash(g.closest('section').id);
