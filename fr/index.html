@@ -805,7 +805,14 @@
   .rp .rpc img { width: 100%; height: 100%; object-fit: cover; }
   .rpx { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 16px; width: 46px; height: 46px; border-radius: 50%; border: 0; background: rgba(40,36,32,.82); color: #FCECCF; display: grid; place-items: center; cursor: pointer; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
   .rpx svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
-  .rppill { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 74px; right: 16px; height: 46px; border-radius: 23px; background: rgba(40,36,32,.82); color: #FCECCF; display: grid; place-items: center; font: 600 13px/1 var(--label); letter-spacing: .12em; text-transform: uppercase; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); pointer-events: none; }
+  .rptabs { position: absolute; z-index: 3; top: max(18px, env(safe-area-inset-top, 0px)); left: 74px; right: 16px; height: 46px; padding: 4px; border-radius: 23px; background: rgba(40,36,32,.82); display: grid; grid-template-columns: 1fr 1fr; gap: 4px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .rptabs button { border: 0; border-radius: 19px; background: none; color: rgba(252,236,207,.6); font: 600 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; transition: background .2s, color .2s; }
+  .rptabs button.on { background: #F0A81E; color: #1a120a; }
+  .rplist { display: none; position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; padding: calc(max(18px, env(safe-area-inset-top, 0px)) + 66px) 16px 40px; touch-action: pan-y; }
+  .rp.list { touch-action: auto; }
+  .rp.list .rpworld { display: none; }
+  .rp.list .rplist { display: block; }
+  .rplist .card { border-radius: 16px; }
 
   /* top video loop transition */
   .featwipe { position: absolute; inset: 0; z-index: 2; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; transform: translateY(101%); transition: transform .34s cubic-bezier(.77,0,.18,1); }
@@ -828,6 +835,7 @@
   /* Danz logo, bottom left of the player */
   .lblogo { position: fixed; z-index: 3; left: max(clamp(16px, 3vw, 56px), env(safe-area-inset-left, 0px)); bottom: 26px; width: clamp(84px, 8vw, 118px); aspect-ratio: 900 / 368; background-color: #F0A81E; -webkit-mask: var(--lg) center / contain no-repeat; mask: var(--lg) center / contain no-repeat; pointer-events: none; }
   .lb[hidden] .lblogo { display: none; }
+  @media (max-width: 700px) { .lb .lbnavrow .lblogo { position: static; width: 84px; flex: none; margin: 0; } }
 
   /* mobile menu = the same yellow panel as the desktop Work menu */
   @media (max-width: 1099px) {
@@ -898,7 +906,7 @@
   .lbnavrow { display: none; }
   @media (max-width: 700px) {
     .lbnavrow { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 2px; }
-    .lb[data-nav="0"] .lbnavrow { display: none; }
+    .lb[data-nav="0"] .lbnavrow .lbnav { display: none; }
     .lb .lbnavrow .lbnav { position: static; z-index: auto; width: 46px; height: 46px; margin: 0; display: grid; border: 0 !important; background: #F0A81E !important; color: #0b0907 !important; box-shadow: none; opacity: 1; }
     .lb .lbnavrow .lbnav svg { width: 22px; height: 22px; stroke: #0b0907; }
   }
@@ -1106,7 +1114,7 @@
     { id: 'reels', title: 'Reels', vertical: true, about: 'about.reels', items: [
       { id: '6ihGsie94x8', c: 'Brasil', t: 'André Danz - Paris filmmaker', hl: true },
       { id: 'kMt1tsPiEBY', c: 'France', t: 'YGF - Lille chose food' },
-      { id: 'bqMbLGtTUn0', c: 'France', t: 'YGF - Lille cinematic', ar: 1.7778 },
+      { id: 'bqMbLGtTUn0', c: 'France', t: 'YGF - Lille cinematic' },
       { id: 'n7zVfRUbQyg', c: 'France', t: 'Jordan x Brasil - Barber teaser' },
       { id: 'RtCbyIRUqM0', c: 'France', t: 'Nautica tattoo Paris - Barcola' },
       { id: 'LuDh7L3T-VE', c: 'France', t: 'YGF - Dress epic Paris' },
@@ -1712,7 +1720,7 @@
     if (!rp) {
       rp = document.createElement('div');
       rp.className = 'rp';
-      rp.innerHTML = '<button type="button" class="rpx" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rppill"></div><div class="rpworld"></div>';
+      rp.innerHTML = '<button type="button" class="rpx" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button><div class="rptabs" role="tablist"><button type="button" role="tab" data-m="board"></button><button type="button" role="tab" data-m="list"></button></div><div class="rpworld"></div><div class="rplist"><div class="grid vertical"></div></div>';
       host.appendChild(rp);
       var x0 = 0, y0 = 0, px = 0, py = 0, vx = 0, vy = 0, lt = 0, down = false, tot = 0, moved = false;
       var W = 0, H = 0, vw = 0, vh = 0, cw = 0, ch = 0, items = [];
@@ -1722,6 +1730,8 @@
         cw = Math.min(Math.round(vw * 0.46), 230); ch = Math.round(cw * 1.7778);
         var gap = 14, padX = 36, padTop = 110, padBot = 70, cols = 3;
         world.innerHTML = ''; items = [];
+        var lg = rp.querySelector('.rplist .grid'); lg.innerHTML = '';
+        for (var j = 0; j < src.length; j++) { var ln = src[j].cloneNode(true); ln.hidden = false; lg.appendChild(ln); }
         for (var i = 0; i < src.length; i++) {
           var n = src[i].cloneNode(true);
           n.hidden = false; n.removeAttribute('style'); n.classList.add('rpc');
@@ -1768,7 +1778,7 @@
       }
       function kick() { if (!rpRaf) { lt = 0; rpRaf = requestAnimationFrame(tick); } }
       rp.addEventListener('pointerdown', function (e) {
-        if (e.target.closest('.rpx')) return;
+        if (e.target.closest('.rpx') || e.target.closest('.rptabs') || rp.dataset.mode !== 'board') return;
         down = true; moved = false; tot = 0; x0 = e.clientX; y0 = e.clientY; vx = vy = 0; kick();
       });
       window.addEventListener('pointermove', function (e) {
@@ -1785,11 +1795,25 @@
       rp.addEventListener('click', function (e) { if (moved) { e.preventDefault(); e.stopPropagation(); moved = false; } }, true);
       rp.querySelector('.rpx').addEventListener('click', function () { closeReelsPan(); });
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && rp && rp.classList.contains('on') && lb.hidden) closeReelsPan(); });
+      var TABS = { en: ['Board', 'List'], fr: ['Mosaïque', 'Liste'], pt: ['Mosaico', 'Lista'] };
+      rp._tabs = function () {
+        var tt = TABS[lang] || TABS.en, bs = rp.querySelectorAll('.rptabs button');
+        bs[0].textContent = tt[0]; bs[1].textContent = tt[1];
+      };
+      rp._mode = function (m) {
+        rp.dataset.mode = m;
+        rp.classList.toggle('list', m === 'list');
+        rp.querySelectorAll('.rptabs button').forEach(function (b) { var on = b.dataset.m === m; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+        if (m === 'list') { rp.querySelector('.rplist').scrollTop = 0; down = false; }
+        try { localStorage.setItem('reelsMode', m); } catch (x) {}
+      };
+      rp.querySelector('.rptabs').addEventListener('click', function (e) { var b = e.target.closest('button'); if (b) rp._mode(b.dataset.m); });
       rp._reset = function () { px = Math.round((vw - W) / 2 > 0 ? (vw - W) / 2 : (vw - W) / 2); py = 0; vx = vy = 0; render(); };
     }
-    var h2 = document.querySelector('#reels h2');
-    rp.querySelector('.rppill').textContent = h2 ? (h2.getAttribute('aria-label') || h2.textContent) : 'Reels';
+    rp._tabs();
     rp._build();
+    var sm = 'board'; try { if (localStorage.getItem('reelsMode') === 'list') sm = 'list'; } catch (x) {}
+    rp._mode(sm);
     rp.hidden = false;
     rp._reset();
     void rp.offsetWidth;
@@ -2011,6 +2035,7 @@
     if (mq.addEventListener) mq.addEventListener('change', place); else if (mq.addListener) mq.addListener(place);
     function siblings() {
       var card = (curTrigger && curTrigger.closest && curTrigger.closest('.card')) || document.querySelector('.card[data-id="' + curId + '"]');
+      if (card && card.closest('.rp')) card = document.querySelector('#grid-reels .card[data-id="' + card.dataset.id + '"]');
       var grid = card && card.closest('.grid');
       if (!grid) return null;
       var list = Array.prototype.slice.call(grid.querySelectorAll('.card'));
@@ -2410,6 +2435,17 @@
   lbl.className = 'lblogo'; lbl.setAttribute('aria-hidden', 'true');
   lbl.style.setProperty('--lg', lg.style.getPropertyValue('--lg'));
   lb.appendChild(lbl);
+  /* on phones the logo sits in the arrows row, between the two buttons, so it never lands on top of Close */
+  (function () {
+    var mql = window.matchMedia('(max-width: 700px)');
+    function placeLogo() {
+      var row = lb.querySelector('.lbnavrow');
+      if (mql.matches && row) row.insertBefore(lbl, row.querySelector('.lbnext'));
+      else lb.appendChild(lbl);
+    }
+    placeLogo();
+    if (mql.addEventListener) mql.addEventListener('change', function () { setTimeout(placeLogo, 0); });
+  })();
   var last = null, tm = null;
   function openC(from) {
     var d = document.getElementById('drawer'), b = document.getElementById('burger');
