@@ -835,6 +835,40 @@
     .rplist .grid { max-width: 1240px; margin: 0 auto; }
   }
 
+
+  /* Category pages (full screen, large cards) */
+  .cp { position: fixed; inset: 0; z-index: 40; background: #0b0907; opacity: 0; transition: opacity .25s ease; overflow: hidden; }
+  .cp[hidden] { display: none; }
+  .cp.on { opacity: 1; }
+  .cpscroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; touch-action: pan-y; }
+  .cpbody { max-width: 1180px; margin: 0 auto; padding: calc(max(18px, env(safe-area-inset-top, 0px)) + 84px) 16px 90px; }
+  .cph { margin: 0 0 6px; font: 400 clamp(46px, 9vw, 112px)/.92 var(--display); text-transform: uppercase; text-wrap: balance; }
+  .cpcount { margin: 0 0 30px; font: 500 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+  .cplist { display: grid; gap: 26px; }
+  .cpi { will-change: transform, opacity; transform-origin: center; }
+  .cpi .card { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 18px; }
+  .cpbar { position: absolute; z-index: 3; top: 0; left: 0; right: 0; height: calc(max(18px, env(safe-area-inset-top, 0px)) + 66px); background: linear-gradient(#0b0907 55%, rgba(11,9,7,0)); pointer-events: none; }
+  .cpbar > * { pointer-events: auto; }
+  .cpx { position: absolute; top: max(18px, env(safe-area-inset-top, 0px)); left: 16px; width: 46px; height: 46px; border-radius: 50%; border: 0; background: #F0A81E; color: #0b0907; display: grid; place-items: center; cursor: pointer; }
+  .cpx svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+  .cpnav { position: absolute; top: max(18px, env(safe-area-inset-top, 0px)); left: 74px; right: 116px; height: 46px; border-radius: 23px; background: rgba(40,36,32,.86); display: flex; align-items: center; justify-content: space-between; padding: 0 4px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+  .cpnav button { flex: none; width: 38px; height: 38px; border-radius: 50%; border: 0; background: none; color: #FCECCF; display: grid; place-items: center; cursor: pointer; transition: background .2s, color .2s; }
+  .cpnav button:hover { background: #F0A81E; color: #0b0907; }
+  .cpnav button svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+  .cpnav .cpnext svg { transform: scaleX(-1); }
+  .cpname { flex: 1; min-width: 0; text-align: center; font: 600 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; color: #FCECCF; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .cplogo { z-index: 3; }
+  @media (hover: hover) {
+    .cpi .card .label { opacity: 0; transition: opacity .8s ease; }
+    .cpi .card:hover .label { opacity: 1; transition-delay: .7s; }
+  }
+  @media (min-width: 701px) {
+    .cpx { left: 28px; top: 24px; }
+    .cpnav { top: 24px; left: 50%; right: auto; width: 380px; transform: translateX(-50%); }
+    .cpbar { height: 100px; }
+    .cpbody { padding-top: 120px; }
+  }
+
   /* top video loop transition */
   .featwipe { position: absolute; inset: 0; z-index: 2; background: #F0A81E var(--pat) 0 0 / 300px 300px repeat; pointer-events: none; transform: translateY(101%); transition: transform .34s cubic-bezier(.77,0,.18,1); }
   .featwipe.on { transform: none; }
@@ -1944,6 +1978,102 @@
     document.documentElement.style.overflow = '';
     if (window.__lenis && window.__lenis.start) window.__lenis.start();
   }
+  /* Other categories: "See more" opens a full-screen page of its own (large 16:9 cards, one per row; swipe or arrows move to the next category) */
+  var cp = null;
+  function cpGrids() {
+    return Array.prototype.filter.call(document.querySelectorAll('section.cat .grid'), function (g) { return g.id !== 'grid-reels' && g.querySelector('.card'); }).map(function (g) { return g.id; });
+  }
+  var CPARW = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>';
+  function openCinema(gridId) {
+    var ids = cpGrids(), i = ids.indexOf(gridId);
+    if (i < 0) return false;
+    if (!cp) {
+      cp = document.createElement('div');
+      cp.className = 'cp'; cp.hidden = true;
+      cp.setAttribute('data-lenis-prevent', '');
+      cp.innerHTML = '<div class="cpbar"><button type="button" class="cpx" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
+        '<div class="cpnav"><button type="button" class="cpprev" aria-label="Previous category">' + CPARW + '</button><span class="cpname"></span><button type="button" class="cpnext" aria-label="Next category">' + CPARW + '</button></div>' +
+        '<span class="rplogo cplogo" aria-hidden="true"></span></div>' +
+        '<div class="cpscroll"><div class="cpbody"><h2 class="cph"></h2><div class="cpcount"></div><div class="cplist"></div></div></div>';
+      host.appendChild(cp);
+      var srcLogo = document.querySelector('.lblogo');
+      if (srcLogo) cp.querySelector('.cplogo').style.setProperty('--lg', srcLogo.style.getPropertyValue('--lg'));
+      var scr = cp.querySelector('.cpscroll'), body = cp.querySelector('.cpbody'), fxRaf = 0;
+      function fx() {
+        fxRaf = 0;
+        var h = window.innerHeight, els = cp.querySelectorAll('.cpi');
+        for (var k = 0; k < els.length; k++) {
+          var r = els[k].getBoundingClientRect();
+          if (r.bottom < -80 || r.top > h + 80) continue;
+          var d = Math.min(1, Math.abs(r.top + r.height / 2 - h / 2) / (h * 0.8));
+          els[k].style.transform = 'scale(' + (1 - 0.1 * d).toFixed(3) + ')';
+          els[k].style.opacity = (1 - 0.55 * d * d).toFixed(3);
+        }
+      }
+      cp._fx = function () { if (!fxRaf) fxRaf = requestAnimationFrame(fx); };
+      scr.addEventListener('scroll', cp._fx, { passive: true });
+      window.addEventListener('resize', function () { if (cp && !cp.hidden) cp._fx(); });
+      cp._fill = function (gid) {
+        var g = document.getElementById(gid), sec = g.closest('section');
+        var h2 = sec.querySelector('h2'), name = h2 ? (h2.getAttribute('aria-label') || h2.textContent) : '';
+        cp.dataset.grid = gid;
+        cp.querySelector('.cph').textContent = name;
+        cp.querySelector('.cpname').textContent = name;
+        var cnt = sec.querySelector('.count'); cp.querySelector('.cpcount').textContent = cnt ? cnt.textContent : '';
+        var list = cp.querySelector('.cplist'); list.innerHTML = '';
+        g.querySelectorAll('.card').forEach(function (c) {
+          var w = document.createElement('div'); w.className = 'cpi';
+          var n = c.cloneNode(true); n.hidden = false; w.appendChild(n); list.appendChild(w);
+        });
+        scr.scrollTop = 0;
+        setHash(sec.id);
+        cp._fx();
+      };
+      cp._go = function (dir) {
+        var ids2 = cpGrids(); if (ids2.length < 2) return;
+        var j = (ids2.indexOf(cp.dataset.grid) + dir + ids2.length) % ids2.length;
+        body.style.transition = 'transform .22s ease, opacity .22s ease';
+        body.style.transform = 'translateX(' + (-dir * 40) + 'px)'; body.style.opacity = '0';
+        setTimeout(function () {
+          cp._fill(ids2[j]);
+          body.style.transition = 'none'; body.style.transform = 'translateX(' + (dir * 40) + 'px)';
+          void body.offsetWidth;
+          body.style.transition = 'transform .32s ease, opacity .32s ease'; body.style.transform = ''; body.style.opacity = '';
+        }, 220);
+      };
+      cp.querySelector('.cpx').addEventListener('click', closeCinema);
+      cp.querySelector('.cpprev').addEventListener('click', function () { cp._go(-1); });
+      cp.querySelector('.cpnext').addEventListener('click', function () { cp._go(1); });
+      var sx = 0, sy = 0, st = false;
+      scr.addEventListener('touchstart', function (e) { var t0 = e.touches[0]; sx = t0.clientX; sy = t0.clientY; st = true; }, { passive: true });
+      scr.addEventListener('touchend', function (e) {
+        if (!st) return; st = false;
+        var t1 = e.changedTouches[0], dx = t1.clientX - sx, dy = t1.clientY - sy;
+        if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) cp._go(dx < 0 ? 1 : -1);
+      }, { passive: true });
+      document.addEventListener('keydown', function (e) {
+        if (!cp || cp.hidden || !lb.hidden) return;
+        if (e.key === 'Escape') closeCinema();
+        else if (e.key === 'ArrowRight') cp._go(1);
+        else if (e.key === 'ArrowLeft') cp._go(-1);
+      });
+    }
+    cp._fill(gridId);
+    cp.hidden = false;
+    void cp.offsetWidth;
+    cp.classList.add('on');
+    cp._fx();
+    document.documentElement.style.overflow = 'hidden';
+    if (window.__lenis && window.__lenis.stop) window.__lenis.stop();
+    return true;
+  }
+  function closeCinema() {
+    if (!cp) return;
+    cp.classList.remove('on');
+    setTimeout(function () { if (!cp.classList.contains('on')) cp.hidden = true; }, 260);
+    document.documentElement.style.overflow = '';
+    if (window.__lenis && window.__lenis.start) window.__lenis.start();
+  }
   host.addEventListener('click', function (e) {
     var ab = e.target.closest('.aboutbtn');
     if (ab) {
@@ -1958,6 +2088,7 @@
     if (m) {
       var g = document.getElementById(m.dataset.for);
       if (g.id === 'grid-reels' && g.dataset.open !== '1' && openReelsPan()) return;
+      if (g.id !== 'grid-reels' && g.dataset.open !== '1' && openCinema(g.id)) return;
       if (g.dataset.open === '1') { foldGrid(g, true); }
       else { g.dataset.open = '1'; layoutGrid(g); }
       setHash(g.closest('section').id);
@@ -2149,7 +2280,8 @@
     if (mq.addEventListener) mq.addEventListener('change', place); else if (mq.addListener) mq.addListener(place);
     function siblings() {
       var card = (curTrigger && curTrigger.closest && curTrigger.closest('.card')) || document.querySelector('.card[data-id="' + curId + '"]');
-      if (card && card.closest('.rp')) card = document.querySelector('#grid-reels .card[data-id="' + card.dataset.id + '"]');
+      var ov = card && card.closest('.rp, .cp');
+      if (ov) card = document.querySelector('#' + (ov.dataset.grid || 'grid-reels') + ' .card[data-id="' + card.dataset.id + '"]');
       var grid = card && card.closest('.grid');
       if (!grid) return null;
       var list = Array.prototype.slice.call(grid.querySelectorAll('.card'));
