@@ -1929,7 +1929,7 @@
         rp.classList.toggle('list', m === 'list');
         rp.querySelectorAll('.rptabs button').forEach(function (b) { var on = b.dataset.m === m; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
         if (m === 'list') { rp.querySelector('.rplist').scrollTop = 0; down = false; }
-        try { localStorage.setItem('reelsMode', m); } catch (x) {}
+        // mode not persisted: always opens as board
       };
       var tabsEl = rp.querySelector('.rptabs'), thumb = tabsEl.querySelector('.rpthumb');
       var tdrag = null, tmoved = false;
@@ -1966,7 +1966,7 @@
     }
     rp._tabs();
     rp._build();
-    var sm = 'board'; try { if (localStorage.getItem('reelsMode') === 'list') sm = 'list'; } catch (x) {}
+    var sm = 'board';
     rp._mode(sm);
     rp.hidden = false;
     rp._reset();
