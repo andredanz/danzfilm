@@ -1768,13 +1768,16 @@
       var srcLogo = document.querySelector('.lblogo');
       if (srcLogo) rp.querySelector('.rplogo').style.setProperty('--lg', srcLogo.style.getPropertyValue('--lg'));
       var x0 = 0, y0 = 0, px = 0, py = 0, vx = 0, vy = 0, lt = 0, down = false, tot = 0, moved = false;
-      var W = 0, H = 0, vw = 0, vh = 0, cw = 0, ch = 0, items = [];
+      var W = 0, H = 0, vw = 0, vh = 0, cw = 0, ch = 0, items = [], lockX = false;
       var world = rp.querySelector('.rpworld');
       rp._build = function () {
         vw = window.innerWidth; vh = window.innerHeight;
         var wide = vw > 700;
-        cw = wide ? Math.max(240, Math.min(340, Math.round(vw * 0.22))) : Math.min(Math.round(vw * 0.46), 230); ch = Math.round(cw * 1.7778);
-        var gap = wide ? 18 : 14, padX = wide ? 80 : 36, padTop = wide ? 120 : 110, padBot = wide ? 90 : 70, cols = wide ? Math.max(4, Math.ceil(src.length / 3)) : 3;
+        lockX = wide;
+        var gap = wide ? 18 : 14, padX = wide ? 70 : 36, padTop = wide ? 120 : 110, padBot = wide ? 90 : 70, cols = wide ? (vw >= 1100 ? 5 : 4) : 3;
+        if (wide) { cw = Math.min(340, Math.floor((vw - 2 * padX - (cols - 1) * gap) / cols)); padX = Math.floor((vw - cols * cw - (cols - 1) * gap) / 2); }
+        else cw = Math.min(Math.round(vw * 0.46), 230);
+        ch = Math.round(cw * 1.7778);
         world.innerHTML = ''; items = [];
         var lg = rp.querySelector('.rplist .grid'); lg.innerHTML = '';
         for (var j = 0; j < src.length; j++) { var ln = src[j].cloneNode(true); ln.hidden = false; lg.appendChild(ln); }
@@ -1788,11 +1791,11 @@
           items.push({ el: n, cx: x + cw / 2, cy: y + ch / 2 });
         }
         var rows = Math.ceil(src.length / cols);
-        W = padX * 2 + cols * cw + (cols - 1) * gap;
+        W = lockX ? vw : padX * 2 + cols * cw + (cols - 1) * gap;
         H = padTop + rows * ch + (rows - 1) * gap + ch / 2 + gap / 2 + padBot;
         world.style.width = W + 'px'; world.style.height = H + 'px';
       };
-      function minX() { return Math.min(0, vw - W); }
+      function minX() { return lockX ? 0 : Math.min(0, vw - W); }
       function minY() { return Math.min(0, vh - H); }
       function render() {
         world.style.transform = 'translate3d(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px,0)';
@@ -1833,8 +1836,8 @@
         var dx = e.clientX - x0, dy = e.clientY - y0;
         x0 = e.clientX; y0 = e.clientY; tot += Math.abs(dx) + Math.abs(dy);
         if (tot > 8) moved = true;
-        px = clampSoft(px + dx, minX(), 0); py = clampSoft(py + dy, minY(), 0);
-        vx = vx * 0.5 + dx * 0.5; vy = vy * 0.5 + dy * 0.5;
+        px = lockX ? 0 : clampSoft(px + dx, minX(), 0); py = clampSoft(py + dy, minY(), 0);
+        vx = lockX ? 0 : vx * 0.5 + dx * 0.5; vy = vy * 0.5 + dy * 0.5;
       });
       function up() { if (!down) return; down = false; rp.classList.remove('drag'); kick(); }
       window.addEventListener('pointerup', up);
@@ -1868,7 +1871,7 @@
         e.preventDefault();
         clearTip();
         var m = e.deltaMode === 1 ? 32 : 1;
-        px = Math.max(minX(), Math.min(0, px - e.deltaX * m));
+        px = lockX ? 0 : Math.max(minX(), Math.min(0, px - e.deltaX * m));
         py = Math.max(minY(), Math.min(0, py - e.deltaY * m));
         vx = vy = 0; kick();
       }, { passive: false });
@@ -1917,7 +1920,7 @@
       }
       window.addEventListener('pointerup', tup);
       window.addEventListener('pointercancel', tup);
-      rp._reset = function () { px = Math.round((vw - W) / 2 > 0 ? (vw - W) / 2 : (vw - W) / 2); py = 0; vx = vy = 0; render(); };
+      rp._reset = function () { px = lockX ? 0 : Math.round((vw - W) / 2); py = 0; vx = vy = 0; render(); };
     }
     rp._tabs();
     rp._build();
