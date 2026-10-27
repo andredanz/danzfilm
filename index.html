@@ -1826,27 +1826,27 @@
   (function () {
     var box = lb.querySelector('.lb-box'), acc = 0, lastW = 0, armed = false, idle = null, tY = 0, tOn = false;
     function atEnd() { return lb.scrollTop + lb.clientHeight >= lb.scrollHeight - 2; }
-    function pull(px) { box.style.transition = 'none'; box.style.transform = 'translateY(' + (-Math.min(px, 260) * 0.35).toFixed(1) + 'px)'; box.style.opacity = String(1 - Math.min(px, 260) / 700); }
+    function pull(f) { f = Math.min(1, f); box.style.transition = 'none'; box.style.transform = 'translateY(' + (-f * 70).toFixed(1) + 'px)'; box.style.opacity = String(1 - f * 0.45); }
     function reset() { acc = 0; box.style.transition = 'transform .3s ease, opacity .3s ease'; box.style.transform = ''; box.style.opacity = ''; }
     lb.addEventListener('wheel', function (e) {
       if (lb.hidden) return;
       var now = Date.now();
-      if (now - lastW > 160) { armed = atEnd(); acc = 0; }
+      if (now - lastW > 350) { armed = atEnd(); acc = 0; }
       lastW = now;
       if (!armed) return;
       if (e.deltaY <= 0) { reset(); armed = false; return; }
-      acc += e.deltaY; pull(acc);
-      clearTimeout(idle); idle = setTimeout(reset, 380);
-      if (acc >= 300) { clearTimeout(idle); reset(); armed = false; closePlayer(); }
+      acc += e.deltaY; pull(acc / 900);
+      clearTimeout(idle); idle = setTimeout(reset, 600);
+      if (acc >= 900) { clearTimeout(idle); reset(); armed = false; closePlayer(); }
     }, { passive: true });
     lb.addEventListener('touchstart', function (e) { tY = e.touches[0].clientY; tOn = atEnd(); acc = 0; }, { passive: true });
     lb.addEventListener('touchmove', function (e) {
       if (!tOn) return;
       var d = tY - e.touches[0].clientY;
-      if (d > 0 && atEnd()) { acc = d; pull(d * 1.6); } else if (d <= 0) { acc = 0; reset(); }
+      if (d > 0 && atEnd()) { acc = d; pull(d / 260); } else if (d <= 0) { acc = 0; reset(); }
     }, { passive: true });
     lb.addEventListener('touchend', function () {
-      if (tOn && acc > 120) { acc = 0; reset(); closePlayer(); } else if (tOn) reset();
+      if (tOn && acc > 260) { acc = 0; reset(); closePlayer(); } else if (tOn) reset();
       tOn = false;
     }, { passive: true });
   })();
@@ -2140,26 +2140,26 @@
       (function () {
         var acc = 0, lastW = 0, armed = false, idle = null, tY = 0, tOn = false;
         function atEnd() { return scr.scrollTop + scr.clientHeight >= scr.scrollHeight - 2; }
-        function pull(px) { body.style.transition = 'none'; body.style.transform = 'translateY(' + (-Math.min(px, 260) * 0.35).toFixed(1) + 'px)'; body.style.opacity = String(1 - Math.min(px, 260) / 700); }
+        function pull(f) { f = Math.min(1, f); body.style.transition = 'none'; body.style.transform = 'translateY(' + (-f * 70).toFixed(1) + 'px)'; body.style.opacity = String(1 - f * 0.45); }
         function reset() { acc = 0; body.style.transition = 'transform .3s ease, opacity .3s ease'; body.style.transform = ''; body.style.opacity = ''; }
         scr.addEventListener('wheel', function (e) {
           var now = Date.now();
-          if (now - lastW > 160) { armed = atEnd(); acc = 0; }
+          if (now - lastW > 350) { armed = atEnd(); acc = 0; }
           lastW = now;
           if (!armed) return;
           if (e.deltaY <= 0) { reset(); armed = false; return; }
-          acc += e.deltaY; pull(acc);
-          clearTimeout(idle); idle = setTimeout(reset, 380);
-          if (acc >= 300) { clearTimeout(idle); reset(); armed = false; closeCinema(); }
+          acc += e.deltaY; pull(acc / 900);
+          clearTimeout(idle); idle = setTimeout(reset, 600);
+          if (acc >= 900) { clearTimeout(idle); reset(); armed = false; closeCinema(); }
         }, { passive: true });
         scr.addEventListener('touchstart', function (e) { tY = e.touches[0].clientY; tOn = atEnd(); acc = 0; }, { passive: true });
         scr.addEventListener('touchmove', function (e) {
           if (!tOn) return;
           var d = tY - e.touches[0].clientY;
-          if (d > 0 && atEnd()) { acc = d; pull(d * 1.6); } else if (d <= 0) { acc = 0; reset(); }
+          if (d > 0 && atEnd()) { acc = d; pull(d / 260); } else if (d <= 0) { acc = 0; reset(); }
         }, { passive: true });
         scr.addEventListener('touchend', function () {
-          if (tOn && acc > 120) { acc = 0; reset(); closeCinema(); } else if (tOn) reset();
+          if (tOn && acc > 260) { acc = 0; reset(); closeCinema(); } else if (tOn) reset();
           tOn = false;
         }, { passive: true });
       })();
