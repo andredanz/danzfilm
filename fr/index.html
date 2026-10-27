@@ -1010,6 +1010,16 @@
   @media (max-width: 560px) { .cov::before { background-size: 220px 220px; } }
   /* Header: slightly transparent with blur, so the page is seen scrolling underneath */
   .bar { background: color-mix(in srgb, var(--bg) 58%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15); border-bottom-color: rgba(252, 236, 207, .08); }
+  /* Top pills (category name, Board/List): slightly transparent with blur, content scrolls underneath */
+  .cpnav, .rptabs { background: rgba(40, 36, 32, .5); -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2); box-shadow: 0 0 0 1px rgba(252, 236, 207, .08) inset; }
+  .cpbar { background: linear-gradient(rgba(11, 9, 7, .55), rgba(11, 9, 7, 0)); }
+  /* Liquid glass: translucent, strong blur + saturation, bright rim and soft sheen */
+  .cpnav, .rptabs, .cpseg {
+    background: linear-gradient(135deg, rgba(255, 255, 255, .20) 0%, rgba(255, 255, 255, .05) 42%, rgba(255, 255, 255, .12) 100%);
+    -webkit-backdrop-filter: blur(22px) saturate(1.9) brightness(1.12); backdrop-filter: blur(22px) saturate(1.9) brightness(1.12);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), inset 0 -1px 0 rgba(255, 255, 255, .14), inset 0 0 0 1px rgba(255, 255, 255, .13), 0 10px 30px rgba(0, 0, 0, .38);
+  }
+  .bar { background: linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .03)), color-mix(in srgb, var(--bg) 42%, transparent); -webkit-backdrop-filter: blur(24px) saturate(1.8) brightness(1.1); backdrop-filter: blur(24px) saturate(1.8) brightness(1.1); border-bottom: 0; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .16), 0 8px 30px rgba(0, 0, 0, .3); }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
