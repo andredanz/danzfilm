@@ -853,6 +853,20 @@
   }
   .cpi { will-change: transform, opacity; transform-origin: center; }
   .cpi[hidden] { display: none; }
+  .cplist { align-items: start; }
+  .cpinfo { display: none; }
+  @media (hover: hover) and (min-width: 701px) {
+    .cpinfo { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .5s cubic-bezier(.2, .8, .2, 1); pointer-events: none; }
+    .cpinfo > div { overflow: hidden; min-height: 0; }
+    .cpic { margin-top: 10px; padding: 14px 18px 15px; border-radius: 18px; background: #F0A81E; color: #0b0907; transform: translateY(-115%); opacity: 0; transition: transform .5s cubic-bezier(.2, .8, .2, 1), opacity .3s ease; }
+    .cpi:hover .cpinfo { grid-template-rows: 1fr; }
+    .cpi:hover .cpic { transform: translateY(0); opacity: 1; }
+    .cpic .meta { margin-bottom: 8px; }
+    .cpic .chip { color: #0b0907; border-color: rgba(11, 9, 7, .55); background: transparent; }
+    .cpic .chip svg { stroke: #0b0907; }
+    .cpit { display: block; font: 500 13px/1.35 var(--label); letter-spacing: .08em; text-transform: uppercase; }
+    .cpi .card .label { display: none; }
+  }
   .cpseg { display: inline-flex; gap: 4px; margin: 0 0 26px; padding: 4px; border-radius: 999px; background: #1c1814; }
   .cpseg[hidden] { display: none; }
   .cpseg button { appearance: none; border: 0; cursor: pointer; padding: 11px 20px; border-radius: 999px; background: transparent; color: var(--muted, #b9ab94); font: 500 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; transition: background .25s, color .25s; }
@@ -2052,7 +2066,12 @@
         g.querySelectorAll('.card').forEach(function (c) {
           var vert = parseFloat(c.dataset.ar) < 1;
           var w = document.createElement('div'); w.className = 'cpi ' + (vert ? 'v' : 'h'); if (vert) nV++; else nH++;
-          var n = c.cloneNode(true); n.hidden = false; w.appendChild(n); list.appendChild(w);
+          var n = c.cloneNode(true); n.hidden = false; w.appendChild(n);
+          var mt = c.querySelector('.meta'), tt = c.querySelector('.ttl');
+          var inf = document.createElement('div'); inf.className = 'cpinfo'; inf.setAttribute('aria-hidden', 'true');
+          inf.innerHTML = '<div><div class="cpic">' + (mt ? mt.outerHTML : '') + '<span class="cpit"></span></div></div>';
+          inf.querySelector('.cpit').textContent = c.dataset.title || (tt ? tt.textContent : '');
+          w.appendChild(inf); list.appendChild(w);
         });
         var seg = cp.querySelector('.cpseg'); seg.innerHTML = '';
         function setMode(m) {
