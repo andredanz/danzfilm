@@ -1096,6 +1096,17 @@
 
 <script>(function () {
 
+  /* On a refresh, always start again at the top (no restored scroll position, no section hash). */
+  try {
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    var nav0 = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+    if (nav0 && nav0.type === 'reload') {
+      if (location.hash && !/^#v=/.test(location.hash)) history.replaceState(null, '', location.pathname + location.search);
+      window.scrollTo(0, 0);
+      window.addEventListener('load', function () { window.scrollTo(0, 0); setTimeout(function () { window.scrollTo(0, 0); }, 250); });
+    }
+  } catch (x) {}
+
   /* LANGUAGES: English is the default; French and Portuguese (Brazil) are switched with the flags at the top. */
   var D = {
     en: {
@@ -1175,7 +1186,18 @@
     }
   };
   var lang = 'en';
-  try { var saved = localStorage.getItem('lang'); if (saved === 'fr' || saved === 'pt' || saved === 'en') lang = saved; } catch (e) {}
+  try {
+    var saved = localStorage.getItem('lang');
+    if (saved === 'fr' || saved === 'pt' || saved === 'en') lang = saved;
+    else {
+      /* First visit: follow the browser language (pt -> Portuguese, fr -> French, anything else -> English). */
+      var bl = (navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || 'en']);
+      for (var bi = 0; bi < bl.length; bi++) {
+        var b2 = String(bl[bi]).toLowerCase().slice(0, 2);
+        if (b2 === 'pt' || b2 === 'fr' || b2 === 'en') { lang = b2; break; }
+      }
+    }
+  } catch (e) {}
   if (window.__forceLang === 'fr' || window.__forceLang === 'pt' || window.__forceLang === 'en') lang = window.__forceLang;
   function t(k) { return (D[lang] && D[lang][k] != null) ? D[lang][k] : (D.en[k] != null ? D.en[k] : k); }
 
