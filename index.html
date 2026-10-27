@@ -856,16 +856,17 @@
   .cplist { align-items: start; }
   .cpinfo { display: none; }
   @media (hover: hover) and (min-width: 701px) {
-    .cpinfo { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .5s cubic-bezier(.2, .8, .2, 1); pointer-events: none; }
-    .cpinfo > div { overflow: hidden; min-height: 0; }
-    .cpic { margin-top: 10px; padding: 14px 18px 15px; border-radius: 18px; background: #F0A81E; color: #0b0907; transform: translateY(-115%); opacity: 0; transition: transform .5s cubic-bezier(.2, .8, .2, 1), opacity .3s ease; }
-    .cpi:hover .cpinfo { grid-template-rows: 1fr; }
-    .cpi:hover .cpic { transform: translateY(0); opacity: 1; }
+    .cpi { position: relative; transition: translate .5s cubic-bezier(.2, .8, .2, 1); }
+    .cpi .card { position: relative; z-index: 2; }
+    .cpinfo { display: block; position: absolute; left: 0; right: 0; top: calc(100% - 26px); z-index: 1; overflow: hidden; border-radius: 0 0 18px 18px; pointer-events: none; }
+    .cpic { padding: 36px 20px 16px; background: #F0A81E; color: #0b0907; transform: translateY(-101%); transition: transform .5s cubic-bezier(.2, .8, .2, 1); }
+    .cpi.open .cpic { transform: translateY(0); }
     .cpic .meta { margin-bottom: 8px; }
     .cpic .chip { color: #0b0907; border-color: rgba(11, 9, 7, .55); background: transparent; }
     .cpic .chip svg { stroke: #0b0907; }
     .cpit { display: block; font: 500 13px/1.35 var(--label); letter-spacing: .08em; text-transform: uppercase; }
     .cpi .card .label { display: none; }
+    .cpi.open .card { border-color: #F0A81E; }
   }
   .cpseg { display: inline-flex; gap: 4px; margin: 0 0 26px; padding: 4px; border-radius: 999px; background: #1c1814; }
   .cpseg[hidden] { display: none; }
@@ -2072,6 +2073,21 @@
           inf.innerHTML = '<div><div class="cpic">' + (mt ? mt.outerHTML : '') + '<span class="cpit"></span></div></div>';
           inf.querySelector('.cpit').textContent = c.dataset.title || (tt ? tt.textContent : '');
           w.appendChild(inf); list.appendChild(w);
+          if (window.matchMedia('(hover: hover) and (min-width: 701px)').matches) {
+            w.addEventListener('mouseenter', function () {
+              var r0 = w.getBoundingClientRect(), sh = Math.max(0, inf.offsetHeight - 30);
+              w.classList.add('open');
+              list.querySelectorAll('.cpi').forEach(function (o2) {
+                if (o2 === w) return;
+                var r = o2.getBoundingClientRect();
+                if (Math.abs(r.left - r0.left) < 20 && r.top > r0.top + 10) o2.style.translate = '0 ' + sh + 'px';
+              });
+            });
+            w.addEventListener('mouseleave', function () {
+              w.classList.remove('open');
+              list.querySelectorAll('.cpi').forEach(function (o2) { o2.style.translate = ''; });
+            });
+          }
         });
         var seg = cp.querySelector('.cpseg'); seg.innerHTML = '';
         function setMode(m) {
