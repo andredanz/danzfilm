@@ -819,7 +819,7 @@
   .rplist .card { border-radius: 16px; }
 
 
-  .rplogo { position: absolute; z-index: 3; top: calc(max(18px, env(safe-area-inset-top, 0px)) + 4px); right: 18px; width: 84px; aspect-ratio: 900 / 368; background-color: #F0A81E; -webkit-mask: var(--lg) center / contain no-repeat; mask: var(--lg) center / contain no-repeat; pointer-events: none; }
+  .rplogo { position: absolute; z-index: 3; top: calc(max(18px, env(safe-area-inset-top, 0px)) + 4px); right: 18px; width: 84px; aspect-ratio: 900 / 368; background-color: #F0A81E; -webkit-mask: var(--lg) center / contain no-repeat; mask: var(--lg) center / contain no-repeat; pointer-events: auto; cursor: pointer; }
   .rptip { position: fixed; z-index: 5; padding: 10px 14px; border-radius: 12px; background: rgba(24,20,16,.86); color: #FCECCF; font: 600 11px/1.4 var(--label); letter-spacing: .1em; text-transform: uppercase; opacity: 0; transform: translateY(4px); transition: opacity .7s ease, transform .7s ease; pointer-events: none; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(252,236,207,.14); }
   .rptip.on { opacity: 1; transform: none; }
   .rp[data-mode="board"] { cursor: grab; }
@@ -1824,6 +1824,34 @@
     stage.innerHTML = '<img src="' + esc(src) + '" alt="' + esc(title || 'Town hall feedback') + '">';
     showLightbox(title, src, 'Open image', trigger);
   }
+  /* Pull past the end of the player page to close it */
+  (function () {
+    var box = lb.querySelector('.lb-box'), acc = 0, lastW = 0, armed = false, idle = null, tY = 0, tOn = false;
+    function atEnd() { return lb.scrollTop + lb.clientHeight >= lb.scrollHeight - 2; }
+    function pull(px) { box.style.transition = 'none'; box.style.transform = 'translateY(' + (-Math.min(px, 260) * 0.35).toFixed(1) + 'px)'; box.style.opacity = String(1 - Math.min(px, 260) / 700); }
+    function reset() { acc = 0; box.style.transition = 'transform .3s ease, opacity .3s ease'; box.style.transform = ''; box.style.opacity = ''; }
+    lb.addEventListener('wheel', function (e) {
+      if (lb.hidden) return;
+      var now = Date.now();
+      if (now - lastW > 160) { armed = atEnd(); acc = 0; }
+      lastW = now;
+      if (!armed) return;
+      if (e.deltaY <= 0) { reset(); armed = false; return; }
+      acc += e.deltaY; pull(acc);
+      clearTimeout(idle); idle = setTimeout(reset, 380);
+      if (acc >= 300) { clearTimeout(idle); reset(); armed = false; closePlayer(); }
+    }, { passive: true });
+    lb.addEventListener('touchstart', function (e) { tY = e.touches[0].clientY; tOn = atEnd(); acc = 0; }, { passive: true });
+    lb.addEventListener('touchmove', function (e) {
+      if (!tOn) return;
+      var d = tY - e.touches[0].clientY;
+      if (d > 0 && atEnd()) { acc = d; pull(d * 1.6); } else if (d <= 0) { acc = 0; reset(); }
+    }, { passive: true });
+    lb.addEventListener('touchend', function () {
+      if (tOn && acc > 120) { acc = 0; reset(); closePlayer(); } else if (tOn) reset();
+      tOn = false;
+    }, { passive: true });
+  })();
   function closePlayer() {
     (function () {
       var c = (curTrigger && curTrigger.closest && curTrigger.closest('.card')) || document.querySelector('.card[data-id="' + curId + '"]');
@@ -2239,6 +2267,17 @@
     document.documentElement.style.overflow = '';
     if (window.__lenis && window.__lenis.start) window.__lenis.start();
   }
+  /* The logo on the Reels board / category pages closes them and goes back to the start screen */
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest || !e.target.closest('.rplogo')) return;
+    if (rp && !rp.hidden) closeReelsPan();
+    if (cp && !cp.hidden) closeCinema();
+    setHash('');
+    setTimeout(function () {
+      if (window.__lenis && window.__lenis.scrollTo) window.__lenis.scrollTo(0, { immediate: true });
+      window.scrollTo(0, 0);
+    }, 30);
+  });
   host.addEventListener('click', function (e) {
     var ab = e.target.closest('.aboutbtn');
     if (ab) {
