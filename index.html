@@ -847,9 +847,20 @@
   @media (min-width: 1000px) { .cplist { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; } }
   @media (max-width: 700px) {
     .cplist { grid-template-columns: 1fr; gap: 22px; }
+    .cpi .card .meta { display: none; }
+    .cpi .card .label { padding-top: 0; }
     .cpi .card { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
   }
   .cpi { will-change: transform, opacity; transform-origin: center; }
+  .cpi[hidden] { display: none; }
+  .cpseg { display: inline-flex; gap: 4px; margin: 0 0 26px; padding: 4px; border-radius: 999px; background: #1c1814; }
+  .cpseg[hidden] { display: none; }
+  .cpseg button { appearance: none; border: 0; cursor: pointer; padding: 11px 20px; border-radius: 999px; background: transparent; color: var(--muted, #b9ab94); font: 500 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; transition: background .25s, color .25s; }
+  .cpseg button.on { background: #F0A81E; color: #0b0907; }
+  .cplist.v { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+  @media (min-width: 1000px) { .cplist.v { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
+  .cplist.v .cpi .card { aspect-ratio: 9 / 16; }
+  @media (max-width: 700px) { .cplist.v .cpi .card .ttl { font-size: 10px; } }
   .cpi .card { display: block; width: 100%; aspect-ratio: 16 / 9; border-radius: 18px; }
   .cpbar { position: absolute; z-index: 3; top: 0; left: 0; right: 0; height: calc(max(18px, env(safe-area-inset-top, 0px)) + 66px); background: linear-gradient(#0b0907 55%, rgba(11,9,7,0)); pointer-events: none; }
   .cpbar > * { pointer-events: auto; }
@@ -1218,11 +1229,11 @@
       { id: 'wixWz7zTNe4', c: 'France', t: 'Andromède DBB' },
       { id: 'xlKOeS2dYiQ', c: 'France', t: 'Zayne DBB' },
       { id: 'hQMMTLWILFo', c: 'France', t: 'Soola DBB' },
-      { id: '8zU1Wu6Iow0', c: 'France', t: 'Fashion Film Vanessa Takes Paris' },
-      { id: 'YoDSiliSFh0', c: 'France', t: 'Fashion Film - Talita Dal Bó - Danz Film' },
-      { id: 'cO1hAWJlAZY', c: 'France', t: 'YGF Paris - fashion style' },
-      { id: 'bXPkgSriNKI', c: 'France', t: 'DBB lililala reels 4' },
-      { id: 'sKv_B0NxieQ', c: 'France', t: 'Danz dbb ucr reels studio' },
+      { id: '8zU1Wu6Iow0', ar: 0.5625, c: 'France', t: 'Fashion Film Vanessa Takes Paris' },
+      { id: 'YoDSiliSFh0', ar: 0.5625, c: 'France', t: 'Fashion Film - Talita Dal Bó - Danz Film' },
+      { id: 'cO1hAWJlAZY', ar: 0.5625, c: 'France', t: 'YGF Paris - fashion style' },
+      { id: 'bXPkgSriNKI', ar: 0.5625, c: 'France', t: 'DBB lililala reels 4' },
+      { id: 'sKv_B0NxieQ', ar: 0.5625, c: 'France', t: 'Danz dbb ucr reels studio' },
       { id: '-Be6z1jLkUw', c: 'France', t: 'Flora CO eve DBB' }
     ]},
     { id: 'commercial', title: 'Commercial', about: 'about.commercial', items: [
@@ -1997,7 +2008,7 @@
       cp.innerHTML = '<div class="cpbar"><button type="button" class="cpx" aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>' +
         '<div class="cpnav"><button type="button" class="cpprev" aria-label="Previous category">' + CPARW + '</button><span class="cpname"></span><button type="button" class="cpnext" aria-label="Next category">' + CPARW + '</button></div>' +
         '<span class="rplogo cplogo" aria-hidden="true"></span></div>' +
-        '<div class="cpscroll"><div class="cpbody"><h2 class="cph"></h2><div class="cpcount"></div><div class="cplist"></div></div></div>';
+        '<div class="cpscroll"><div class="cpbody"><h2 class="cph"></h2><div class="cpcount"></div><div class="cpseg" hidden></div><div class="cplist"></div></div></div>';
       host.appendChild(cp);
       var srcLogo = document.querySelector('.lblogo');
       if (srcLogo) cp.querySelector('.cplogo').style.setProperty('--lg', srcLogo.style.getPropertyValue('--lg'));
@@ -2037,10 +2048,29 @@
         cp.querySelector('.cpname').textContent = name;
         var cnt = sec.querySelector('.count'); cp.querySelector('.cpcount').textContent = cnt ? cnt.textContent : '';
         var list = cp.querySelector('.cplist'); list.innerHTML = '';
+        var nH = 0, nV = 0;
         g.querySelectorAll('.card').forEach(function (c) {
-          var w = document.createElement('div'); w.className = 'cpi';
+          var vert = parseFloat(c.dataset.ar) < 1;
+          var w = document.createElement('div'); w.className = 'cpi ' + (vert ? 'v' : 'h'); if (vert) nV++; else nH++;
           var n = c.cloneNode(true); n.hidden = false; w.appendChild(n); list.appendChild(w);
         });
+        var seg = cp.querySelector('.cpseg'); seg.innerHTML = '';
+        function setMode(m) {
+          list.classList.toggle('v', m === 'v');
+          list.querySelectorAll('.cpi').forEach(function (w) { w.hidden = !w.classList.contains(m); });
+          seg.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.m === m); });
+          scr.scrollTop = 0; cp._fx();
+        }
+        if (nH && nV) {
+          var LB = { en: ['Horizontal film', 'Vertical film'], fr: ['Film horizontal', 'Film vertical'], pt: ['Filme horizontal', 'Filme vertical'] }[lang] || ['Horizontal film', 'Vertical film'];
+          seg.hidden = false;
+          [['h', LB[0]], ['v', LB[1]]].forEach(function (x) {
+            var b = document.createElement('button'); b.type = 'button'; b.dataset.m = x[0]; b.textContent = x[1];
+            b.addEventListener('click', function () { setMode(x[0]); });
+            seg.appendChild(b);
+          });
+          setMode('h');
+        } else { seg.hidden = true; list.classList.toggle('v', nV > 0 && !nH); }
         scr.scrollTop = 0;
         setHash(sec.id);
         cp._fx();
