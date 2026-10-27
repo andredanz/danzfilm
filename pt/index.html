@@ -1008,6 +1008,8 @@
   .cov.in > * { opacity: 1; transition: opacity .4s ease .85s; }
   .cov.out { transition-delay: .25s; }
   @media (max-width: 560px) { .cov::before { background-size: 220px 220px; } }
+  /* Header: slightly transparent with blur, so the page is seen scrolling underneath */
+  .bar { background: color-mix(in srgb, var(--bg) 58%, transparent); -webkit-backdrop-filter: blur(16px) saturate(1.15); backdrop-filter: blur(16px) saturate(1.15); border-bottom-color: rgba(252, 236, 207, .08); }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
