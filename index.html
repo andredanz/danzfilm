@@ -869,10 +869,12 @@
     .cpi .card .label { display: none; }
     .cpi.open .card { border-color: #F0A81E; }
   }
-  .cpseg { display: inline-flex; gap: 4px; margin: 0 0 26px; padding: 4px; border-radius: 999px; background: #1c1814; }
+  .cpseg { position: relative; display: inline-grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 0 0 26px; padding: 4px; border-radius: 999px; background: #1c1814; touch-action: none; -webkit-user-select: none; user-select: none; }
   .cpseg[hidden] { display: none; }
-  .cpseg button { appearance: none; border: 0; cursor: pointer; padding: 11px 20px; border-radius: 999px; background: transparent; color: var(--muted, #b9ab94); font: 500 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; transition: background .25s, color .25s; }
-  .cpseg button.on { background: #F0A81E; color: #0b0907; }
+  .cpthumb { position: absolute; z-index: 0; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 12px) / 2); border-radius: 999px; background: #F0A81E; transition: transform .35s cubic-bezier(.2, .8, .2, 1); cursor: grab; }
+  .cpseg[data-mode="v"] .cpthumb { transform: translateX(calc(100% + 4px)); }
+  .cpseg button { position: relative; z-index: 1; appearance: none; border: 0; cursor: pointer; padding: 11px 20px; border-radius: 999px; background: transparent; color: var(--muted, #b9ab94); font: 500 12px/1 var(--label); letter-spacing: .1em; text-transform: uppercase; white-space: nowrap; transition: color .25s; }
+  .cpseg button.on { color: #0b0907; }
   .cplist.v { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
   @media (min-width: 1000px) { .cplist.v { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; } }
   .cplist.v .cpi .card { aspect-ratio: 9 / 16; }
@@ -2077,6 +2079,62 @@
         cp.addEventListener('contextmenu', function (e) { if (e.target.closest && e.target.closest('.cpi .card')) e.preventDefault(); });
       })();
       scr.addEventListener('scroll', cp._fx, { passive: true });
+      /* press and hold the yellow pill and drag it to the other side: Horizontal <-> Vertical */
+      (function () {
+        var seg = cp.querySelector('.cpseg'), drag = null, moved = false;
+        seg.addEventListener('click', function (e) { if (moved) { e.stopImmediatePropagation(); moved = false; } }, true);
+        seg.addEventListener('pointerdown', function (e) {
+          var th = seg.querySelector('.cpthumb'); if (!th) return;
+          var r = seg.getBoundingClientRect(), tw = (r.width - 12) / 2;
+          drag = { x: e.clientX, max: tw + 4, base: seg.dataset.mode === 'v' ? tw + 4 : 0, th: th };
+          drag.tx = drag.base; moved = false;
+        });
+        window.addEventListener('pointermove', function (e) {
+          if (!drag) return;
+          var dx = e.clientX - drag.x;
+          if (!moved && Math.abs(dx) < 5) return;
+          moved = true;
+          drag.tx = Math.max(0, Math.min(drag.max, drag.base + dx));
+          drag.th.style.transition = 'none'; drag.th.style.transform = 'translateX(' + drag.tx + 'px)';
+          var bb = seg.querySelectorAll('button'), toV = drag.tx > drag.max / 2;
+          if (bb.length > 1) { bb[0].classList.toggle('on', !toV); bb[1].classList.toggle('on', toV); }
+        });
+        function up() {
+          if (!drag) return;
+          var d = drag; drag = null;
+          d.th.style.transition = ''; d.th.style.transform = '';
+          if (moved) { if (cp._segSet) cp._segSet(d.tx > d.max / 2 ? 'v' : 'h'); setTimeout(function () { moved = false; }, 0); }
+        }
+        window.addEventListener('pointerup', up);
+        window.addEventListener('pointercancel', up);
+      })();
+      /* Pull past the end of the page to close it and go back to the main screen */
+      (function () {
+        var acc = 0, lastW = 0, armed = false, idle = null, tY = 0, tOn = false;
+        function atEnd() { return scr.scrollTop + scr.clientHeight >= scr.scrollHeight - 2; }
+        function pull(px) { body.style.transition = 'none'; body.style.transform = 'translateY(' + (-Math.min(px, 260) * 0.35).toFixed(1) + 'px)'; body.style.opacity = String(1 - Math.min(px, 260) / 700); }
+        function reset() { acc = 0; body.style.transition = 'transform .3s ease, opacity .3s ease'; body.style.transform = ''; body.style.opacity = ''; }
+        scr.addEventListener('wheel', function (e) {
+          var now = Date.now();
+          if (now - lastW > 160) { armed = atEnd(); acc = 0; }
+          lastW = now;
+          if (!armed) return;
+          if (e.deltaY <= 0) { reset(); armed = false; return; }
+          acc += e.deltaY; pull(acc);
+          clearTimeout(idle); idle = setTimeout(reset, 380);
+          if (acc >= 300) { clearTimeout(idle); reset(); armed = false; closeCinema(); }
+        }, { passive: true });
+        scr.addEventListener('touchstart', function (e) { tY = e.touches[0].clientY; tOn = atEnd(); acc = 0; }, { passive: true });
+        scr.addEventListener('touchmove', function (e) {
+          if (!tOn) return;
+          var d = tY - e.touches[0].clientY;
+          if (d > 0 && atEnd()) { acc = d; pull(d * 1.6); } else if (d <= 0) { acc = 0; reset(); }
+        }, { passive: true });
+        scr.addEventListener('touchend', function () {
+          if (tOn && acc > 120) { acc = 0; reset(); closeCinema(); } else if (tOn) reset();
+          tOn = false;
+        }, { passive: true });
+      })();
       window.addEventListener('resize', function () { if (cp && !cp.hidden) cp._fx(); });
       cp._fill = function (gid) {
         var g = document.getElementById(gid), sec = g.closest('section');
@@ -2112,11 +2170,12 @@
             });
           }
         });
-        var seg = cp.querySelector('.cpseg'); seg.innerHTML = '';
+        var seg = cp.querySelector('.cpseg'); seg.innerHTML = '<span class="cpthumb"></span>';
         function setMode(m) {
           list.classList.toggle('v', m === 'v');
           list.querySelectorAll('.cpi').forEach(function (w) { w.hidden = !w.classList.contains(m); });
           seg.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.m === m); });
+          seg.dataset.mode = m; cp._segSet = setMode;
           scr.scrollTop = 0; cp._fx();
         }
         if (nH && nV) {
