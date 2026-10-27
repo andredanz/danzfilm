@@ -513,9 +513,10 @@
   @keyframes shutter { 0% { opacity: .9; } 100% { opacity: 0; } }
   .lb:not([hidden]) { animation: lbIn .16s ease-out; }
   .lb:not([hidden]) .stage { animation: focusPull .42s cubic-bezier(.2,.7,.2,1) both; }
-  .lb:not([hidden])::after { content: ""; position: fixed; inset: 0; background: #000; pointer-events: none; animation: shutter .18s ease-out forwards; }
+  .lb:not([hidden])::after { content: ""; position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; animation: shutter .18s ease-out forwards; }
   .fbview:not([hidden]) img { animation: focusPull .38s cubic-bezier(.2,.7,.2,1) both; }
   @media (prefers-reduced-motion: reduce) { .lb:not([hidden]), .lb:not([hidden]) .stage, .lb:not([hidden])::after, .fbview:not([hidden]) img { animation: none; } }
+  @media (prefers-reduced-motion: reduce) { .lb:not([hidden])::after { display: none; } }
 
   .lang button svg .fill { fill: currentColor; stroke: none; }
   .lang button svg .fill.soft { fill-opacity: .4; }
@@ -1020,6 +1021,9 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5), inset 0 -1px 0 rgba(255, 255, 255, .14), inset 0 0 0 1px rgba(255, 255, 255, .13), 0 10px 30px rgba(0, 0, 0, .38);
   }
   .bar { background: linear-gradient(180deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .03)), color-mix(in srgb, var(--bg) 42%, transparent); -webkit-backdrop-filter: blur(24px) saturate(1.8) brightness(1.1); backdrop-filter: blur(24px) saturate(1.8) brightness(1.1); border-bottom: 0; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .16), 0 8px 30px rgba(0, 0, 0, .3); }
+  /* While a video player is open, switch the glass blur off everywhere: backdrop-filter can make embedded video render black (sound only) on some devices */
+  body:has(.lb:not([hidden])) .bar, body:has(.lb:not([hidden])) .cpnav, body:has(.lb:not([hidden])) .rptabs, body:has(.lb:not([hidden])) .cpseg, body:has(.lb:not([hidden])) .rptip { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+  .lb { isolation: isolate; }
 </style>
 
 <div id="intro" aria-hidden="true"></div>
