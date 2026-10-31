@@ -1417,8 +1417,8 @@
     var btn = document.querySelector('.more[data-for="' + g.id + '"]');
     for (var i = 0; i < cards.length; i++) cards[i].hidden = !open && i >= keep;
     if (btn) {
-      btn.hidden = cards.length <= keep;
-      btn.textContent = open ? t('less') : t('more') + ' (' + (cards.length - keep) + ')';
+      btn.hidden = cards.length === 0;
+      btn.textContent = open ? t('less') : (cards.length > keep ? t('more') + ' (' + (cards.length - keep) + ')' : t('more'));
     }
   }
   function layoutAll() { document.querySelectorAll('.grid').forEach(layoutGrid); }
@@ -2340,7 +2340,7 @@
     var h1 = g.offsetHeight;
     extras.forEach(function (c) { c.hidden = false; });
     var btn = document.querySelector('.more[data-for="' + g.id + '"]');
-    if (btn) btn.textContent = t('more') + ' (' + (cards.length - keep) + ')';
+    if (btn) btn.textContent = cards.length > keep ? t('more') + ' (' + (cards.length - keep) + ')' : t('more');
     if (!(h1 < h0) || document.documentElement.classList.contains('noanim')) { g.dataset.open = '0'; layoutGrid(g); if (done) done(); return; }
     g.dataset.anim = '1';
     g.style.overflow = 'hidden'; g.style.height = h0 + 'px';
@@ -2477,6 +2477,18 @@
       openPlayer(card.dataset.id, card.dataset.title, parseFloat(card.dataset.ar), card);
     }
     if (document.readyState === 'complete') setTimeout(go, 900); else window.addEventListener('load', function () { setTimeout(go, 900); });
+  })();
+  /* A link like danzfilm.com/#au-dela-des-lumieres (or #short-film, #commercial, #fashion, #reels) opens that category page straight away */
+  (function () {
+    var m = /^#([a-z][a-z0-9-]*)$/.exec(location.hash);
+    if (!m || m[1] === 'top') return;
+    var secEl = document.getElementById(m[1]);
+    if (!secEl || !secEl.matches || !secEl.matches('section.cat')) return;
+    function go() {
+      if (!lb.hidden) return;
+      if (m[1] === 'reels') openReelsPan(); else openCinema('grid-' + m[1]);
+    }
+    if (document.readyState === 'complete') setTimeout(go, 1500); else window.addEventListener('load', function () { setTimeout(go, 1500); });
   })();
   /* Previous / next video of the same category inside the player (buttons and arrow keys) */
   (function () {
